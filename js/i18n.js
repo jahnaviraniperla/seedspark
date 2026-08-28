@@ -6,7 +6,7 @@
 const translations = {
   en: {
     // Top Bar & Branding
-    "topbar_mission": "🌾 Fair Prices for Farmers. Fresh Produce for Families. Zero Middlemen.",
+    "topbar_mission": "🌾 Fair Prices for Farmers. Fresh Products for Families. Zero Middlemen.",
     "brand_tagline": "Direct Farm-to-Fork Marketplace",
     
     // Navigation
@@ -22,7 +22,7 @@ const translations = {
     // Hero Section
     "hero_title": "Direct from the Farm to Your Table. No Middlemen.",
     "hero_desc": "Connecting hardworking farmers directly with conscious consumers. Farmers get up to 40% higher income, and consumers enjoy fresh harvest at 30% lower prices.",
-    "hero_cta_buy": "Shop Fresh Produce",
+    "hero_cta_buy": "Shop Fresh Products",
     "hero_cta_sell": "Sell Your Harvest (Farmer)",
     "stat_farmers": "Active Farmers",
     "stat_savings": "Consumer Savings",
@@ -39,6 +39,7 @@ const translations = {
     "trad_step_4": "Transport & City distributor adds 25%",
     "trad_step_5": "Local Retailer sells at ₹50/kg to Consumer",
     
+    // AgriDirect Chain
     "agri_chain_title": "AgriDirect Fair-Trade Model",
     "agri_step_1": "Farmer sets fair price: Earns ₹30/kg (+100% gain!)",
     "agri_step_2": "Direct connection & direct buyer contact",
@@ -104,7 +105,7 @@ const translations = {
     "in_stock": "In Stock",
     
     // Product Details Page
-    "prod_detail_title": "Produce Details",
+    "prod_detail_title": "Products Details",
     "prod_farmer_story": "Farmer Profile & Farm Details",
     "prod_shelf_life": "Shelf Life",
     "prod_min_order": "Min Order",
@@ -117,7 +118,7 @@ const translations = {
     
     // Cart & Checkout
     "cart_title": "Your Direct Farm Basket",
-    "cart_empty": "Your cart is empty. Support a farmer by adding fresh produce!",
+    "cart_empty": "Your cart is empty. Support a farmer by adding fresh products!",
     "cart_subtotal": "Item Subtotal",
     "cart_middleman_savings": "Total Savings vs Mandi Middlemen",
     "cart_delivery_charge": "Direct Delivery / Logistics",
@@ -148,11 +149,11 @@ const translations = {
     // Farmer Dashboard
     "dash_title": "Farmer Management Portal",
     "dash_subtitle": "Manage your fresh crops, direct prices, and customer orders",
-    "dash_stat_sales": "Total Produce Sales",
+    "dash_stat_sales": "Total Products Sales",
     "dash_stat_active": "Active Crop Listings",
     "dash_stat_orders": "Orders Received",
     "dash_stat_delivered": "Completed Deliveries",
-    "btn_add_product": "+ List New Produce",
+    "btn_add_product": "+ List New Products",
     "my_products": "My Crop Inventory",
     "incoming_orders": "Direct Orders from Consumers",
     "table_crop": "Crop Name",
@@ -164,8 +165,8 @@ const translations = {
     "table_actions": "Actions",
     
     // Add Product Modal
-    "modal_add_title": "List Fresh Farm Produce",
-    "modal_crop_name": "Crop / Produce Name",
+    "modal_add_title": "List Fresh Farm Products",
+    "modal_crop_name": "Crop / Products Name",
     "modal_category": "Category",
     "modal_unit": "Unit (Kg, Quintal, Dozen, Liter)",
     "modal_farmer_price": "Your Direct Price (₹ per unit)",
@@ -173,17 +174,17 @@ const translations = {
     "modal_stock": "Total Available Quantity",
     "modal_harvest_date": "Harvest / Available Date",
     "modal_location": "Farm Location / District",
-    "modal_image": "Produce Image URL or Preset",
-    "modal_organic": "Is this produce 100% Organic?",
+    "modal_image": "Products Image URL or Preset",
+    "modal_organic": "Is this products 100% Organic?",
     "modal_desc": "Description / Farming Details",
-    "btn_save_produce": "Publish Produce Listing",
+    "btn_save_produce": "Publish Products Listing",
     
     // Auth
     "auth_farmer_tab": "Farmer Portal",
     "auth_consumer_tab": "Consumer / Buyer",
     "auth_login_title": "Welcome Back to AgriDirect",
     "auth_register_title": "Create an Account",
-    "auth_role_farmer": "I am a Farmer (Selling Produce)",
+    "auth_role_farmer": "I am a Farmer (Selling Products)",
     "auth_role_consumer": "I am a Consumer (Buying Fresh)",
     "auth_name": "Full Name",
     "auth_farm_name": "Farm Name (Optional for farmers)",

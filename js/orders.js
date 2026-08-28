@@ -79,7 +79,7 @@ const AgriOrders = {
 
           <!-- Order Items Grid -->
           <div style="background:var(--bg-subtle); border-radius:12px; padding:1.25rem; margin:1.25rem 0;">
-            <h4 style="font-size:0.95rem; font-weight:700; color:var(--text-main); margin-bottom:0.75rem;">Produce Items:</h4>
+            <h4 style="font-size:0.95rem; font-weight:700; color:var(--text-main); margin-bottom:0.75rem;">Products Items:</h4>
             <div style="display:flex; flex-direction:column; gap:0.5rem;">
               ${order.items.map(item => `
                 <div style="display:flex; justify-content:space-between; font-size:0.92rem;">

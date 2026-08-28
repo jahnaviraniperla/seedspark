@@ -244,7 +244,7 @@ const AgriProducts = {
     if (!product) {
       container.innerHTML = `
         <div style="text-align:center; padding:4rem;">
-          <h2>Produce Not Found</h2>
+          <h2>Products Not Found</h2>
           <a href="marketplace.html" class="btn btn-primary" style="margin-top:1rem;">Back to Marketplace</a>
         </div>
       `;

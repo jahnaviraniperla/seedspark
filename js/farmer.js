@@ -71,7 +71,7 @@ const AgriFarmer = {
       container.innerHTML = `
         <tr>
           <td colspan="7" style="text-align:center; padding:2rem; color:var(--text-muted);">
-            🌾 No produce listed yet. Click <strong>"+ List New Produce"</strong> to add your first harvest!
+            🌾 No products listed yet. Click <strong>"+ List New Products"</strong> to add your first harvest!
           </td>
         </tr>
       `;
@@ -164,7 +164,7 @@ const AgriFarmer = {
   deleteProduce(id) {
     if (confirm("Are you sure you want to remove this crop listing?")) {
       AgriData.deleteProduct(id);
-      AgriApp.showToast("Produce listing removed.", "info");
+      AgriApp.showToast("Products listing removed.", "info");
       this.renderInventoryTable();
       this.renderStats();
     }
@@ -213,7 +213,7 @@ const AgriFarmer = {
     const desc = document.getElementById('modalDesc').value.trim() || "Naturally harvested fresh farm produce.";
 
     if (!name || !farmerPrice || !marketPrice || !stock) {
-      AgriApp.showToast("Please fill in all mandatory produce fields.", "error");
+      AgriApp.showToast("Please fill in all mandatory products fields.", "error");
       return;
     }
 
@@ -241,7 +241,7 @@ const AgriFarmer = {
 
     AgriData.addProduct(newProduct);
     this.closeAddModal();
-    AgriApp.showToast(`Produce "${name}" listed successfully! 🌾`, 'success');
+    AgriApp.showToast(`Products "${name}" listed successfully! 🌾`, 'success');
 
     // Refresh UI
     this.renderInventoryTable();

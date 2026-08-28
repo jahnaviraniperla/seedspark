@@ -17,7 +17,7 @@
     <div class="container">
       <div style="display:flex; align-items:center;">
         <span class="header-badge-tag">KISAN PORTAL</span>
-        <span data-i18n="topbar_mission">🌾 Fair Prices for Farmers. Fresh Produce for Families. Zero Middlemen.</span>
+        <span data-i18n="topbar_mission">🌾 Fair Prices for Farmers. Fresh Products for Families. Zero Middlemen.</span>
       </div>
       <div style="font-size:0.8rem; color:#b7e4c7;">
         🧑‍🌾 Welcome to your direct farm sales management portal
@@ -81,7 +81,7 @@
         </div>
 
         <button class="btn btn-accent btn-lg" onclick="AgriFarmer.openAddModal()">
-          🌾 <span data-i18n="btn_add_product">+ List New Produce</span>
+          🌾 <span data-i18n="btn_add_product">+ List New Products</span>
         </button>
       </div>
     </div>
@@ -93,7 +93,7 @@
           <div class="stat-card-icon green">💰</div>
           <div>
             <div class="stat-number" id="dashStatSales">₹0</div>
-            <div class="stat-title" data-i18n="dash_stat_sales">Total Produce Sales</div>
+            <div class="stat-title" data-i18n="dash_stat_sales">Total Products Sales</div>
           </div>
         </div>
 
@@ -129,7 +129,7 @@
             My Crop Inventory
           </h2>
           <button class="btn btn-primary btn-sm" onclick="AgriFarmer.openAddModal()">
-            + Add Produce
+            + Add Products
           </button>
         </div>
 
@@ -186,14 +186,14 @@
   <div class="modal-backdrop" id="addProduceModal">
     <div class="modal-card">
       <div class="modal-header">
-        <h3 class="modal-title" data-i18n="modal_add_title">List Fresh Farm Produce</h3>
+        <h3 class="modal-title" data-i18n="modal_add_title">List Fresh Farm Products</h3>
         <button class="modal-close" onclick="AgriFarmer.closeAddModal()">×</button>
       </div>
 
       <form id="addProduceForm">
         <div class="modal-body" style="display:flex; flex-direction:column; gap:1.25rem;">
           <div class="form-group">
-            <label class="form-label" data-i18n="modal_crop_name">Crop / Produce Name *</label>
+            <label class="form-label" data-i18n="modal_crop_name">Crop / Products Name *</label>
             <input type="text" id="modalCropName" class="form-control" placeholder="e.g. Farm Fresh Country Tomatoes (నాటు టమోటా)" required>
           </div>
 
@@ -259,7 +259,7 @@
           <div class="form-group">
             <label style="display:flex; align-items:center; gap:0.6rem; cursor:pointer; font-weight:700; color:var(--primary-dark);">
               <input type="checkbox" id="modalIsOrganic" style="width:18px; height:18px; accent-color:var(--primary);" checked>
-              <span data-i18n="modal_organic">🌱 This produce is 100% Organic & Chemical Free</span>
+              <span data-i18n="modal_organic">🌱 This products is 100% Organic & Chemical Free</span>
             </label>
           </div>
 
@@ -271,7 +271,7 @@
 
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" onclick="AgriFarmer.closeAddModal()">Cancel</button>
-          <button type="submit" class="btn btn-primary" data-i18n="btn_save_produce">Publish Produce Listing</button>
+          <button type="submit" class="btn btn-primary" data-i18n="btn_save_produce">Publish Products Listing</button>
         </div>
       </form>
     </div>
@@ -303,7 +303,7 @@
         </div>
 
         <div>
-          <h4 class="footer-title" data-i18n="filter_category">Produce Categories</h4>
+          <h4 class="footer-title" data-i18n="filter_category">Products Categories</h4>
           <ul class="footer-links">
             <li><a href="marketplace.html">Fresh Vegetables</a></li>
             <li><a href="marketplace.html">Orchard Fruits</a></li>
