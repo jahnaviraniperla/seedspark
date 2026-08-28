@@ -20,7 +20,7 @@ const translations = {
     "nav_logout": "Logout",
     
     // Hero Section
-    "hero_title": "Direct from the Farm to Your Table. No Middlemen.",
+    "hero_title": "Direct from the Farm to Our Consumers. No Middlemen.",
     "hero_desc": "Connecting hardworking farmers directly with conscious consumers. Farmers get up to 40% higher income, and consumers enjoy fresh harvest at 30% lower prices.",
     "hero_cta_buy": "Shop Fresh Products",
     "hero_cta_sell": "Sell Your Harvest (Farmer)",
