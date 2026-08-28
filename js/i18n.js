@@ -75,8 +75,20 @@ const translations = {
     "sort_featured": "Featured",
     "sort_price_asc": "Price: Low to High",
     "sort_price_desc": "Price: High to Low",
-    "sort_freshness": "Freshest Harvest",
-    
+    // Product Names
+    "prod_name_prod_1": "Fresh Tomatoes",
+    "prod_name_prod_2": "Red Onions",
+    "prod_name_prod_3": "Delicious Apples",
+    "prod_name_prod_4": "Aged Sona Masoori Rice (12 Months Old)",
+    "prod_name_prod_5": "Desi Unpolished Toor Dal",
+    "prod_name_prod_6": "Guntur Red Chilli",
+    "prod_name_prod_7": "Pure Cow Desi Ghee",
+    "prod_name_prod_8": "Fresh Organic Green Palak Spinach",
+    "prod_name_prod_9": "Tree-Ripened Golden Papaya",
+    "prod_name_prod_10": "Raw Turmeric",
+    "prod_name_prod_11": "Whole Wheat Grain",
+    "prod_name_prod_12": "Green Moong Dal - Whole Desi",
+
     // Product Card
     "harvested_on": "Harvested",
     "farmer_label": "Farmer",
@@ -262,9 +274,20 @@ const translations = {
     "sort_by": "క్రమబద్ధీకరించండి",
     "sort_featured": "ప్రధానమైనవి",
     "sort_price_asc": "ధర: తక్కువ నుండి ఎక్కువ",
-    "sort_price_desc": "ధర: ఎక్కువ నుండి తక్కువ",
-    "sort_freshness": "తాజా కోత",
-    
+    // Product Names (English with Telugu in parentheses)
+    "prod_name_prod_1": "Fresh Tomatoes (నాటు టమాటాలు)",
+    "prod_name_prod_2": "Red Onions (ఎర్ర ఉల్లిపాయలు)",
+    "prod_name_prod_3": "Delicious Apples (సిమ్లా ఆపిల్స్)",
+    "prod_name_prod_4": "Aged Sona Masoori Rice (సోనా మసూరి బియ్యం - 12 Months Old)",
+    "prod_name_prod_5": "Desi Unpolished Toor Dal (నాటు కందిపప్పు)",
+    "prod_name_prod_6": "Guntur Red Chilli (గుంటూరు ఎండు మిర్చి)",
+    "prod_name_prod_7": "Pure Cow Desi Ghee (స్వచ్ఛమైన ఆవు నెయ్యి - Bilona Method)",
+    "prod_name_prod_8": "Fresh Organic Green Palak Spinach (తాజా పాలకూర)",
+    "prod_name_prod_9": "Tree-Ripened Golden Papaya (బొప్పాయి పండు)",
+    "prod_name_prod_10": "Raw Turmeric (పసుపు కొమ్ములు/పొడి)",
+    "prod_name_prod_11": "Whole Wheat Grain (శర్బతి గోధుమలు)",
+    "prod_name_prod_12": "Green Moong Dal - Whole Desi (ఆకుపచ్చ పెసలు)",
+
     // Product Card
     "harvested_on": "కోత తేదీ",
     "farmer_label": "రైతు",
@@ -450,9 +473,20 @@ const translations = {
     "sort_by": "क्रमबद्ध करें",
     "sort_featured": "विशेष",
     "sort_price_asc": "कीमत: कम से ज्यादा",
-    "sort_price_desc": "कीमत: ज्यादा से कम",
-    "sort_freshness": "ताजा कटाई",
-    
+    // Product Names (English with Hindi in parentheses)
+    "prod_name_prod_1": "Fresh Tomatoes (ताजा देसी टमाटर)",
+    "prod_name_prod_2": "Red Onions (नासिक लाल प्याज)",
+    "prod_name_prod_3": "Delicious Apples (हिमाचली सेब)",
+    "prod_name_prod_4": "Aged Sona Masoori Rice (सोना मसूरी चावल)",
+    "prod_name_prod_5": "Desi Unpolished Toor Dal (देसी अरहर दाल)",
+    "prod_name_prod_6": "Guntur Red Chilli (गुंटूर लाल मिर्च)",
+    "prod_name_prod_7": "Pure Cow Desi Ghee (शुद्ध देसी गाय का घी)",
+    "prod_name_prod_8": "Fresh Organic Green Palak Spinach (ताजा जैविक पालक)",
+    "prod_name_prod_9": "Tree-Ripened Golden Papaya (पका हुआ पपीता)",
+    "prod_name_prod_10": "Raw Turmeric (कच्ची हल्दी / पाउडर)",
+    "prod_name_prod_11": "Whole Wheat Grain (शरबती साबुत गेहूं)",
+    "prod_name_prod_12": "Green Moong Dal - Whole Desi (साबुत हरी मूंग दाल)",
+
     // Product Card
     "harvested_on": "कटाई की तिथि",
     "farmer_label": "किसान",
@@ -642,6 +676,18 @@ function setLanguage(lang) {
     // Dispatch custom event so pages can re-render dynamic elements
     window.dispatchEvent(new CustomEvent('languageChanged', { detail: { lang } }));
   }
+}
+
+/**
+ * Helper to get localized product name based on active language
+ */
+function getProductName(productOrId, defaultName = '') {
+  const id = typeof productOrId === 'object' && productOrId ? (productOrId.id || productOrId.productId) : productOrId;
+  const name = typeof productOrId === 'object' && productOrId ? productOrId.name : defaultName;
+  if (id && translations[currentLang] && translations[currentLang][`prod_name_${id}`]) {
+    return translations[currentLang][`prod_name_${id}`];
+  }
+  return name || id || '';
 }
 
 // Initialize on DOM load

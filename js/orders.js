@@ -83,7 +83,7 @@ const AgriOrders = {
             <div style="display:flex; flex-direction:column; gap:0.5rem;">
               ${order.items.map(item => `
                 <div style="display:flex; justify-content:space-between; font-size:0.92rem;">
-                  <span>🌾 <strong>${item.name}</strong> × ${item.quantity} ${item.unit}</span>
+                  <span>🌾 <strong>${getProductName(item.productId, item.name)}</strong> × ${item.quantity} ${item.unit}</span>
                   <span style="font-weight:700;">₹${item.price * item.quantity}</span>
                 </div>
               `).join('')}
@@ -175,7 +175,7 @@ const AgriOrders = {
             <tbody>
               ${order.items.map(i => `
                 <tr>
-                  <td style="padding:0.6rem; border-bottom:1px solid #eee;">${i.name}</td>
+                  <td style="padding:0.6rem; border-bottom:1px solid #eee;">${getProductName(i.productId, i.name)}</td>
                   <td style="padding:0.6rem; border-bottom:1px solid #eee;">${i.quantity} ${i.unit}</td>
                   <td style="padding:0.6rem; border-bottom:1px solid #eee;">₹${i.price}</td>
                   <td style="padding:0.6rem; border-bottom:1px solid #eee; text-align:right;">₹${i.price * i.quantity}</td>

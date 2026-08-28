@@ -78,13 +78,15 @@ const AgriFarmer = {
       return;
     }
 
-    container.innerHTML = products.map(p => `
+    container.innerHTML = products.map(p => {
+      const displayName = getProductName(p);
+      return `
       <tr>
         <td>
           <div style="display:flex; align-items:center; gap:0.75rem;">
-            <img src="${p.image}" alt="${p.name}" style="width:45px; height:45px; object-fit:cover; border-radius:6px;" onerror="this.src='https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=600&q=80'">
+            <img src="${p.image}" alt="${displayName}" style="width:45px; height:45px; object-fit:cover; border-radius:6px;" onerror="this.src='https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=600&q=80'">
             <div>
-              <strong>${p.name}</strong>
+              <strong>${displayName}</strong>
               <div style="font-size:0.75rem; color:var(--text-muted);">${p.isOrganic ? '🌱 Organic' : 'Standard'} • Harvested: ${p.harvestDate}</div>
             </div>
           </div>
@@ -101,7 +103,7 @@ const AgriFarmer = {
           </div>
         </td>
       </tr>
-    `).join('');
+    `;}).join('');
   },
 
   renderFarmerOrders() {
@@ -131,7 +133,7 @@ const AgriFarmer = {
         </td>
         <td>
           <div style="font-size:0.85rem;">
-            ${o.items.map(i => `<div>${i.name} (${i.quantity} ${i.unit})</div>`).join('')}
+            ${o.items.map(i => `<div>${getProductName(i.productId, i.name)} (${i.quantity} ${i.unit})</div>`).join('')}
           </div>
         </td>
         <td><strong style="color:var(--primary-dark);">₹${o.totalAmount}</strong><div style="font-size:0.75rem; color:var(--text-muted);">${o.paymentMethod}</div></td>

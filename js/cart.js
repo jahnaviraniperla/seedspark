@@ -43,14 +43,15 @@ const AgriCart = {
     container.innerHTML = cart.map(item => {
       const itemSavings = (item.marketPrice - item.farmerPrice) * item.quantity;
       const itemTotal = item.farmerPrice * item.quantity;
+      const displayName = getProductName(item.productId, item.name);
 
       return `
         <div class="cart-item-card" style="background:white; border-radius:12px; border:1px solid var(--border-color); padding:1.25rem; margin-bottom:1rem; display:grid; grid-template-columns:90px 1fr auto auto; gap:1.25rem; align-items:center; box-shadow:var(--shadow-sm);">
-          <img src="${item.image}" alt="${item.name}" style="width:90px; height:80px; object-fit:cover; border-radius:8px;" onerror="this.src='https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=600&q=80'">
+          <img src="${item.image}" alt="${displayName}" style="width:90px; height:80px; object-fit:cover; border-radius:8px;" onerror="this.src='https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=600&q=80'">
           
           <div>
             <h4 style="font-size:1.1rem; color:var(--primary-dark); margin-bottom:0.25rem;">
-              <a href="product-detail.html?id=${item.productId}">${item.name}</a>
+              <a href="product-detail.html?id=${item.productId}">${displayName}</a>
             </h4>
             <div style="font-size:0.85rem; color:var(--text-muted); margin-bottom:0.35rem;">
               🧑‍🌾 Farmer: <strong>${item.farmerName}</strong>

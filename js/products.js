@@ -139,11 +139,12 @@ const AgriProducts = {
   createProductCardHtml(product) {
     const savings = Math.max(0, product.marketPrice - product.farmerPrice);
     const savingsPercent = Math.round((savings / product.marketPrice) * 100);
+    const displayName = getProductName(product);
 
     return `
       <div class="product-card">
         <div class="product-img-wrap">
-          <img src="${product.image}" alt="${product.name}" class="product-img" loading="lazy" onerror="this.src='https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=600&q=80'">
+          <img src="${product.image}" alt="${displayName}" class="product-img" loading="lazy" onerror="this.src='https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=600&q=80'">
           <div class="product-tags">
             ${product.isOrganic ? `<span class="badge badge-organic">🌱 ${t('organic_badge')}</span>` : ''}
             <span class="badge badge-verified">✓ ${t('verified_farmer')}</span>
@@ -158,7 +159,7 @@ const AgriProducts = {
         <div class="product-body">
           <span class="product-category-sub">${t(`cat_${product.category}`) || product.category}</span>
           <h3 class="product-title">
-            <a href="product-detail.html?id=${product.id}">${product.name}</a>
+            <a href="product-detail.html?id=${product.id}">${displayName}</a>
           </h3>
 
           <div class="product-location">
@@ -227,7 +228,7 @@ const AgriProducts = {
     const success = AgriData.addToCart(productId, qty);
     if (success) {
       const product = AgriData.getProductById(productId);
-      AgriApp.showToast(`Added ${product ? product.name : 'item'} to your cart! 🛒`, 'success');
+      AgriApp.showToast(`Added ${product ? getProductName(product) : 'item'} to your cart! 🛒`, 'success');
     }
   },
 
@@ -254,14 +255,15 @@ const AgriProducts = {
     const savings = Math.max(0, product.marketPrice - product.farmerPrice);
     const savingsPercent = Math.round((savings / product.marketPrice) * 100);
     const farmerProfitBoost = Math.round(((product.farmerPrice - (product.farmerPrice * 0.6)) / (product.farmerPrice * 0.6)) * 100);
+    const displayName = getProductName(product);
 
-    const whatsappText = encodeURIComponent(`Hello ${farmer.name}, I found your listing "${product.name}" on AgriDirect and would like to order.`);
+    const whatsappText = encodeURIComponent(`Hello ${farmer.name}, I found your listing "${displayName}" on AgriDirect and would like to order.`);
 
     container.innerHTML = `
       <div class="product-detail-layout">
         <!-- Image & Badges -->
         <div class="product-detail-gallery">
-          <img src="${product.image}" alt="${product.name}" class="gallery-main-img" onerror="this.src='https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=600&q=80'">
+          <img src="${product.image}" alt="${displayName}" class="gallery-main-img" onerror="this.src='https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=600&q=80'">
           
           <div style="display:flex; gap:0.5rem; margin-top:1rem; flex-wrap:wrap;">
             ${product.isOrganic ? `<span class="badge badge-organic" style="font-size:0.85rem; padding:0.4rem 0.8rem;">🌱 100% Certified Organic</span>` : ''}
@@ -303,7 +305,7 @@ const AgriProducts = {
           <div style="font-size:0.85rem; text-transform:uppercase; color:var(--text-muted); font-weight:700; letter-spacing:1px; margin-bottom:0.4rem;">
             ${t(`cat_${product.category}`) || product.category}
           </div>
-          <h1 style="font-size:2rem; font-weight:800; color:var(--primary-dark); margin-bottom:0.75rem;">${product.name}</h1>
+          <h1 style="font-size:2rem; font-weight:800; color:var(--primary-dark); margin-bottom:0.75rem;">${displayName}</h1>
           
           <div style="display:flex; align-items:center; gap:1rem; margin-bottom:1.5rem; font-size:0.9rem; color:var(--text-muted);">
             <span>⭐ <strong>${product.rating}</strong> (${product.reviewsCount} customer reviews)</span>

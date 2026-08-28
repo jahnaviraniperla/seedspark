@@ -144,6 +144,9 @@
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       AgriProducts.renderProductDetail();
+      window.addEventListener('languageChanged', () => {
+        AgriProducts.renderProductDetail();
+      });
     });
   </script>
 </body>

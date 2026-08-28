@@ -137,7 +137,7 @@ const DEFAULT_PRODUCTS = [
   },
   {
     id: "prod_4",
-    name: "Aged Sona Masoori Rice (సోనా మసూరి బియ్యం - 12 Months Old)",
+    name: "Aged Sona Masoori Rice (12 Months Old)",
     category: "grains",
     farmerId: "farmer_1",
     farmerName: "Ramesh Reddy",
@@ -158,7 +158,7 @@ const DEFAULT_PRODUCTS = [
   },
   {
     id: "prod_5",
-    name: "Desi Unpolished Toor Dal (నాటు కందిపప్పు)",
+    name: "Desi Unpolished Toor Dal",
     category: "pulses",
     farmerId: "farmer_4",
     farmerName: "Kavitha Rao",
@@ -221,7 +221,7 @@ const DEFAULT_PRODUCTS = [
   },
   {
     id: "prod_8",
-    name: "Fresh Organic Green Palak Spinach (తాజా పాలకూర)",
+    name: "Fresh Organic Green Palak Spinach",
     category: "vegetables",
     farmerId: "farmer_4",
     farmerName: "Kavitha Rao",
@@ -242,7 +242,7 @@ const DEFAULT_PRODUCTS = [
   },
   {
     id: "prod_9",
-    name: "Tree-Ripened Golden Papaya (బొప్పాయి పండు)",
+    name: "Tree-Ripened Golden Papaya",
     category: "fruits",
     farmerId: "farmer_2",
     farmerName: "Suresh Patil",
@@ -305,7 +305,7 @@ const DEFAULT_PRODUCTS = [
   },
   {
     id: "prod_12",
-    name: "Green Moong Dal - Whole Desi (ఆకుపచ్చ పెసలు)",
+    name: "Green Moong Dal - Whole Desi",
     category: "pulses",
     farmerId: "farmer_4",
     farmerName: "Kavitha Rao",
