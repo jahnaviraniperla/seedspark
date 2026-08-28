@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login & Registration - AgriDirect</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/responsive.css">
+</head>
+<body style="background:var(--bg-subtle);">
+
+  <!-- Top Mission Bar -->
+  <div class="header-top-bar">
+    <div class="container">
+      <div style="display:flex; align-items:center;">
+        <span class="header-badge-tag">SECURE ACCESS</span>
+        <span data-i18n="topbar_mission">🌾 Fair Prices for Farmers. Fresh Produce for Families. Zero Middlemen.</span>
+      </div>
+      <div style="font-size:0.8rem; color:#b7e4c7;">
+        🔒 Direct Verification & Peer-to-Peer Fair Commerce
+      </div>
+    </div>
+  </div>
+
+  <!-- Header -->
+  <header class="site-header">
+    <div class="container header-main">
+      <a href="index.html" class="logo-link">
+        <div class="logo-icon">🌱</div>
+        <div class="logo-text">Agri<span>Direct</span></div>
+      </a>
+
+      <nav class="main-nav" id="mainNav">
+        <a href="index.html" class="nav-link" data-i18n="nav_home">Home</a>
+        <a href="marketplace.html" class="nav-link" data-i18n="nav_marketplace">Marketplace</a>
+        <a href="price-compare.html" class="nav-link" data-i18n="nav_price_compare">Price Compare</a>
+        <a href="farmer-dashboard.html" class="nav-link highlight" data-i18n="nav_dashboard">🌾 Farmer Portal</a>
+        <a href="orders.html" class="nav-link" data-i18n="nav_my_orders">My Orders</a>
+      </nav>
+
+      <div class="header-actions">
+        <div class="lang-selector-wrap">
+          <select id="globalLanguageSelect" class="lang-select">
+            <option value="en">🇬🇧 English</option>
+            <option value="te">🇮🇳 తెలుగు (Telugu)</option>
+            <option value="hi">🇮🇳 हिन्दी (Hindi)</option>
+          </select>
+        </div>
+
+        <div class="cart-btn-wrap">
+          <a href="cart.html" class="cart-icon-btn" title="Shopping Cart">
+            🛒
+            <span class="cart-badge" style="display:none;">0</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Auth Main -->
+  <main class="main-content">
+    <div class="container">
+      <div class="auth-wrapper">
+        <!-- Auth Header Tabs (Login vs Register) -->
+        <div class="auth-tabs">
+          <button class="auth-tab-btn active" id="tabLoginBtn" onclick="switchAuthMode('login')">
+            <span data-i18n="btn_login">Login</span>
+          </button>
+          <button class="auth-tab-btn" id="tabRegisterBtn" onclick="switchAuthMode('register')">
+            <span data-i18n="btn_register">Register</span>
+          </button>
+        </div>
+
+        <div class="auth-body">
+          <!-- Role Switcher (Farmer vs Consumer) -->
+          <div class="role-switcher-box">
+            <button class="role-switch-btn active" id="roleFarmerBtn" onclick="selectRole('farmer')">
+              🧑‍🌾 <span data-i18n="auth_farmer_tab">Farmer</span>
+            </button>
+            <button class="role-switch-btn" id="roleConsumerBtn" onclick="selectRole('consumer')">
+              🛒 <span data-i18n="auth_consumer_tab">Consumer</span>
+            </button>
+          </div>
+
+          <h2 id="authFormTitle" style="font-size:1.4rem; font-weight:800; color:var(--primary-dark); margin-bottom:1.25rem;">
+            Welcome Back to AgriDirect
+          </h2>
+
+          <!-- Auth Form -->
+          <form id="authForm" onsubmit="handleAuthSubmit(event)">
+            <!-- Register Only Fields -->
+            <div id="registerFields" style="display:none; flex-direction:column; gap:1rem; margin-bottom:1rem;">
+              <div class="form-group">
+                <label class="form-label" data-i18n="auth_name">Full Name *</label>
+                <input type="text" id="authNameInput" class="form-control" placeholder="e.g. Ramesh Reddy">
+              </div>
+
+              <div class="form-group" id="farmNameGroup">
+                <label class="form-label" data-i18n="auth_farm_name">Farm Name (Optional for farmers)</label>
+                <input type="text" id="authFarmNameInput" class="form-control" placeholder="e.g. Sri Lakshmi Natural Farms">
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" data-i18n="auth_location">Village / District / City *</label>
+                <input type="text" id="authLocationInput" class="form-control" placeholder="e.g. Tenali, Guntur">
+              </div>
+            </div>
+
+            <!-- Common Fields -->
+            <div style="display:flex; flex-direction:column; gap:1rem;">
+              <div class="form-group">
+                <label class="form-label" data-i18n="auth_phone">Mobile Number / Phone *</label>
+                <input type="text" id="authPhoneInput" class="form-control" placeholder="e.g. 9848012345" required>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" data-i18n="auth_password">Password *</label>
+                <input type="password" id="authPasswordInput" class="form-control" placeholder="Enter password (e.g. password123)" required>
+              </div>
+
+              <button type="submit" id="authSubmitBtn" class="btn btn-primary btn-lg btn-full" style="margin-top:0.5rem; font-weight:800;">
+                Login
+              </button>
+            </div>
+          </form>
+
+          <!-- Toggle Auth Mode link -->
+          <div style="text-align:center; margin-top:1.25rem; font-size:0.9rem;">
+            <a href="javascript:void(0)" id="authSwitchModeLink" onclick="toggleAuthMode()" style="font-weight:600;">
+              Don't have an account? Register here
+            </a>
+          </div>
+
+          <!-- Quick One-Click Demo Logins -->
+          <div class="demo-login-box">
+            <div style="font-size:0.85rem; font-weight:700; color:var(--primary-dark);" data-i18n="quick_demo_login">
+              Quick Demo Login (One-click):
+            </div>
+            <div class="demo-login-btns">
+              <button class="btn btn-secondary btn-sm" onclick="quickLoginAs('farmer')" style="flex:1;">
+                🌾 Login as Demo Farmer
+              </button>
+              <button class="btn btn-secondary btn-sm" onclick="quickLoginAs('consumer')" style="flex:1;">
+                🛒 Login as Demo Consumer
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div>
+          <div class="logo-link" style="color:white; margin-bottom:1rem;">
+            <div class="logo-icon">🌱</div>
+            <div>Agri<span style="color:var(--accent);">Direct</span></div>
+          </div>
+          <p style="font-size:0.9rem; color:#b7e4c7; line-height:1.6;" data-i18n="footer_mission">
+            AgriDirect empowers Indian farmers by connecting them directly with household consumers, eliminating predatory intermediaries, and restoring dignity and fair profits to agriculture.
+          </p>
+        </div>
+
+        <div>
+          <h4 class="footer-title" data-i18n="footer_links">Quick Links</h4>
+          <ul class="footer-links">
+            <li><a href="index.html" data-i18n="nav_home">Home</a></li>
+            <li><a href="marketplace.html" data-i18n="nav_marketplace">Marketplace</a></li>
+            <li><a href="price-compare.html" data-i18n="nav_price_compare">Price Compare</a></li>
+            <li><a href="farmer-dashboard.html" data-i18n="nav_dashboard">Farmer Dashboard</a></li>
+            <li><a href="orders.html" data-i18n="nav_my_orders">My Orders</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 class="footer-title" data-i18n="footer_contact">Farmer Support & Helpline</h4>
+          <p style="font-size:0.9rem; color:#b7e4c7; margin-bottom:0.75rem;">Toll-Free Kisan Helpdesk:</p>
+          <div style="font-size:1.2rem; font-weight:800; color:var(--accent);">1800-425-AGRI (2474)</div>
+          <p style="font-size:0.85rem; color:#95d5b2; margin-top:0.5rem;">support@agridirect.in</p>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <p data-i18n="footer_rights">© 2026 AgriDirect. All Rights Reserved. Empowering Farmers Across India.</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="js/i18n.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/app.js"></script>
+
+  <script>
+    let currentAuthMode = 'login'; // 'login' or 'register'
+    let currentRole = 'farmer'; // 'farmer' or 'consumer'
+
+    function switchAuthMode(mode) {
+      currentAuthMode = mode;
+      const tabLogin = document.getElementById('tabLoginBtn');
+      const tabRegister = document.getElementById('tabRegisterBtn');
+      const regFields = document.getElementById('registerFields');
+      const title = document.getElementById('authFormTitle');
+      const submitBtn = document.getElementById('authSubmitBtn');
+      const switchLink = document.getElementById('authSwitchModeLink');
+
+      if (mode === 'login') {
+        tabLogin.classList.add('active');
+        tabRegister.classList.remove('active');
+        regFields.style.display = 'none';
+        title.textContent = t('auth_login_title');
+        submitBtn.textContent = t('btn_login');
+        switchLink.textContent = t('auth_switch_to_register');
+      } else {
+        tabLogin.classList.remove('active');
+        tabRegister.classList.add('active');
+        regFields.style.display = 'flex';
+        title.textContent = t('auth_register_title');
+        submitBtn.textContent = t('btn_register');
+        switchLink.textContent = t('auth_switch_to_login');
+      }
+    }
+
+    function toggleAuthMode() {
+      switchAuthMode(currentAuthMode === 'login' ? 'register' : 'login');
+    }
+
+    function selectRole(role) {
+      currentRole = role;
+      const farmerBtn = document.getElementById('roleFarmerBtn');
+      const consumerBtn = document.getElementById('roleConsumerBtn');
+      const farmGroup = document.getElementById('farmNameGroup');
+
+      if (role === 'farmer') {
+        farmerBtn.classList.add('active');
+        consumerBtn.classList.remove('active');
+        if (farmGroup) farmGroup.style.display = 'flex';
+      } else {
+        consumerBtn.classList.add('active');
+        farmerBtn.classList.remove('active');
+        if (farmGroup) farmGroup.style.display = 'none';
+      }
+    }
+
+    function handleAuthSubmit(e) {
+      e.preventDefault();
+      const phone = document.getElementById('authPhoneInput').value.trim();
+      const password = document.getElementById('authPasswordInput').value.trim();
+
+      if (currentAuthMode === 'login') {
+        const result = AgriAuth.login(phone, password, currentRole);
+        if (result.success) {
+          AgriApp.showToast(`Welcome back, ${result.user.name}! 👋`, 'success');
+          setTimeout(() => {
+            if (result.user.role === 'farmer') {
+              window.location.href = 'farmer-dashboard.html';
+            } else {
+              window.location.href = 'marketplace.html';
+            }
+          }, 800);
+        } else {
+          AgriApp.showToast(result.message, 'error');
+        }
+      } else {
+        const name = document.getElementById('authNameInput').value.trim();
+        const farmName = document.getElementById('authFarmNameInput').value.trim();
+        const location = document.getElementById('authLocationInput').value.trim();
+
+        if (!name || !location) {
+          AgriApp.showToast("Please enter your name and location.", "error");
+          return;
+        }
+
+        const result = AgriAuth.register({
+          name,
+          phone,
+          password,
+          role: currentRole,
+          farmName,
+          location
+        });
+
+        if (result.success) {
+          AgriApp.showToast(`Account created successfully! Welcome ${name}! 🎉`, 'success');
+          setTimeout(() => {
+            if (result.user.role === 'farmer') {
+              window.location.href = 'farmer-dashboard.html';
+            } else {
+              window.location.href = 'marketplace.html';
+            }
+          }, 800);
+        } else {
+          AgriApp.showToast(result.message, 'error');
+        }
+      }
+    }
+
+    function quickLoginAs(role) {
+      const user = AgriAuth.quickDemoLogin(role);
+      if (user) {
+        AgriApp.showToast(`Logged in as ${user.name} (${user.role})! 🚀`, 'success');
+        setTimeout(() => {
+          if (role === 'farmer') {
+            window.location.href = 'farmer-dashboard.html';
+          } else {
+            window.location.href = 'marketplace.html';
+          }
+        }, 800);
+      }
+    }
+  </script>
+</body>
+</html>

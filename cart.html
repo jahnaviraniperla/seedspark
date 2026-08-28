@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Shopping Cart - AgriDirect</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/responsive.css">
+</head>
+<body>
+
+  <!-- Top Mission Bar -->
+  <div class="header-top-bar">
+    <div class="container">
+      <div style="display:flex; align-items:center;">
+        <span class="header-badge-tag">DIRECT FARM BASKET</span>
+        <span data-i18n="topbar_mission">🌾 Fair Prices for Farmers. Fresh Produce for Families. Zero Middlemen.</span>
+      </div>
+      <div style="font-size:0.8rem; color:#b7e4c7;">
+        ✨ 100% of Produce Value Goes to the Farmer
+      </div>
+    </div>
+  </div>
+
+  <!-- Header -->
+  <header class="site-header">
+    <div class="container header-main">
+      <a href="index.html" class="logo-link">
+        <div class="logo-icon">🌱</div>
+        <div class="logo-text">Agri<span>Direct</span></div>
+      </a>
+
+      <nav class="main-nav" id="mainNav">
+        <a href="index.html" class="nav-link" data-i18n="nav_home">Home</a>
+        <a href="marketplace.html" class="nav-link" data-i18n="nav_marketplace">Marketplace</a>
+        <a href="price-compare.html" class="nav-link" data-i18n="nav_price_compare">Price Compare</a>
+        <a href="farmer-dashboard.html" class="nav-link highlight" data-i18n="nav_dashboard">🌾 Farmer Portal</a>
+        <a href="orders.html" class="nav-link" data-i18n="nav_my_orders">My Orders</a>
+      </nav>
+
+      <div class="header-actions">
+        <div class="lang-selector-wrap">
+          <select id="globalLanguageSelect" class="lang-select">
+            <option value="en">🇬🇧 English</option>
+            <option value="te">🇮🇳 తెలుగు (Telugu)</option>
+            <option value="hi">🇮🇳 हिन्दी (Hindi)</option>
+          </select>
+        </div>
+
+        <div class="cart-btn-wrap">
+          <a href="cart.html" class="cart-icon-btn" title="Shopping Cart" style="background:var(--primary-subtle); color:var(--primary);">
+            🛒
+            <span class="cart-badge" style="display:none;">0</span>
+          </a>
+        </div>
+
+        <div id="headerUserMenu">
+          <a href="auth.html" class="btn btn-sm btn-primary">
+            <span>👤</span> <span data-i18n="nav_login">Login / Register</span>
+          </a>
+        </div>
+
+        <button class="mobile-menu-toggle" id="mobileMenuToggle" aria-label="Toggle Navigation">
+          ☰
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Cart Main -->
+  <main class="main-content">
+    <div class="container" style="padding: 2.5rem 1.25rem;">
+      <h1 style="font-size:2rem; font-weight:800; color:var(--primary-dark); margin-bottom:1.5rem;" data-i18n="cart_title">
+        Your Direct Farm Basket
+      </h1>
+
+      <div style="display:grid; grid-template-columns:1.5fr 1fr; gap:2.5rem;" class="cart-layout">
+        <!-- Cart Items List Container -->
+        <div id="cartItemsContainer">
+          <!-- Rendered by JS -->
+        </div>
+
+        <!-- Cart Summary Box -->
+        <div id="cartSummaryContainer">
+          <!-- Rendered by JS -->
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Checkout Address & Payment Modal -->
+  <div class="modal-backdrop" id="checkoutModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title" data-i18n="checkout_title">Direct Farm Delivery Details</h3>
+        <button class="modal-close" onclick="AgriCart.closeCheckoutModal()">×</button>
+      </div>
+
+      <form onsubmit="AgriCart.handlePlaceOrder(event)">
+        <div class="modal-body" style="display:flex; flex-direction:column; gap:1.25rem;">
+          <div style="background:var(--primary-subtle); padding:0.85rem; border-radius:8px; font-size:0.85rem; color:#1b4332; border:1px solid #b7e4c7;">
+            🌱 <strong>Direct Logistics:</strong> Your produce will be harvested and packed directly by the farmer.
+          </div>
+
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+            <div class="form-group">
+              <label class="form-label" data-i18n="checkout_name">Full Name *</label>
+              <input type="text" id="checkoutNameInput" class="form-control" placeholder="e.g. Ananya Sharma" required>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" data-i18n="checkout_phone">Mobile Number *</label>
+              <input type="tel" id="checkoutPhoneInput" class="form-control" placeholder="e.g. 9876543210" required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" data-i18n="checkout_address">Delivery Address (House / Flat / Street) *</label>
+            <textarea id="checkoutAddressInput" class="form-control" rows="2" placeholder="e.g. Flat 402, Green Meadows Apt, Madhapur" required></textarea>
+          </div>
+
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+            <div class="form-group">
+              <label class="form-label" data-i18n="checkout_city">City / Town *</label>
+              <input type="text" id="checkoutCityInput" class="form-control" placeholder="e.g. Hyderabad" required>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" data-i18n="checkout_pincode">PIN Code *</label>
+              <input type="text" id="checkoutPincodeInput" class="form-control" placeholder="e.g. 500081" required>
+            </div>
+          </div>
+
+          <!-- Payment Options -->
+          <div class="form-group">
+            <label class="form-label" data-i18n="payment_method">Select Payment Method *</label>
+            
+            <div style="display:flex; flex-direction:column; gap:0.75rem; margin-top:0.35rem;">
+              <label style="display:flex; align-items:center; gap:0.75rem; background:var(--bg-subtle); padding:0.85rem; border-radius:8px; border:1.5px solid var(--border-color); cursor:pointer;">
+                <input type="radio" name="paymentMethod" value="UPI / Direct Farmer QR (GPay, PhonePe, Paytm)" checked style="accent-color:var(--primary);">
+                <div>
+                  <strong data-i18n="pay_upi">UPI / Direct Farmer QR (GPay, PhonePe, Paytm)</strong>
+                  <div style="font-size:0.78rem; color:var(--text-muted);">100% Zero transaction fee direct to farmer</div>
+                </div>
+              </label>
+
+              <label style="display:flex; align-items:center; gap:0.75rem; background:var(--bg-subtle); padding:0.85rem; border-radius:8px; border:1.5px solid var(--border-color); cursor:pointer;">
+                <input type="radio" name="paymentMethod" value="Cash on Delivery" style="accent-color:var(--primary);">
+                <div>
+                  <strong data-i18n="pay_cod">Cash on Delivery (Pay upon fresh arrival)</strong>
+                  <div style="font-size:0.78rem; color:var(--text-muted);">Inspect freshness before paying</div>
+                </div>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="AgriCart.closeCheckoutModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary" data-i18n="btn_place_order">Confirm & Place Direct Order</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div>
+          <div class="logo-link" style="color:white; margin-bottom:1rem;">
+            <div class="logo-icon">🌱</div>
+            <div>Agri<span style="color:var(--accent);">Direct</span></div>
+          </div>
+          <p style="font-size:0.9rem; color:#b7e4c7; line-height:1.6;" data-i18n="footer_mission">
+            AgriDirect empowers Indian farmers by connecting them directly with household consumers, eliminating predatory intermediaries, and restoring dignity and fair profits to agriculture.
+          </p>
+        </div>
+
+        <div>
+          <h4 class="footer-title" data-i18n="footer_links">Quick Links</h4>
+          <ul class="footer-links">
+            <li><a href="index.html" data-i18n="nav_home">Home</a></li>
+            <li><a href="marketplace.html" data-i18n="nav_marketplace">Marketplace</a></li>
+            <li><a href="price-compare.html" data-i18n="nav_price_compare">Price Compare</a></li>
+            <li><a href="farmer-dashboard.html" data-i18n="nav_dashboard">Farmer Dashboard</a></li>
+            <li><a href="orders.html" data-i18n="nav_my_orders">My Orders</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 class="footer-title" data-i18n="filter_category">Produce Categories</h4>
+          <ul class="footer-links">
+            <li><a href="marketplace.html">Fresh Vegetables</a></li>
+            <li><a href="marketplace.html">Orchard Fruits</a></li>
+            <li><a href="marketplace.html">Aged Grains & Rice</a></li>
+            <li><a href="marketplace.html">Desi Pulses & Dals</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 class="footer-title" data-i18n="footer_contact">Farmer Support & Helpline</h4>
+          <p style="font-size:0.9rem; color:#b7e4c7; margin-bottom:0.75rem;">Toll-Free Kisan Helpdesk:</p>
+          <div style="font-size:1.2rem; font-weight:800; color:var(--accent);">1800-425-AGRI (2474)</div>
+          <p style="font-size:0.85rem; color:#95d5b2; margin-top:0.5rem;">support@agridirect.in</p>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <p data-i18n="footer_rights">© 2026 AgriDirect. All Rights Reserved. Empowering Farmers Across India.</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="js/i18n.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/cart.js"></script>
+  <script src="js/app.js"></script>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      AgriCart.initCartPage();
+    });
+  </script>
+</body>
+</html>

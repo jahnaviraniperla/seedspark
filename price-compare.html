@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Price Comparison & Middleman Calculator - AgriDirect</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/responsive.css">
+</head>
+<body>
+
+  <!-- Top Mission Bar -->
+  <div class="header-top-bar">
+    <div class="container">
+      <div style="display:flex; align-items:center;">
+        <span class="header-badge-tag">100% PRICE TRANSPARENCY</span>
+        <span data-i18n="topbar_mission">🌾 Fair Prices for Farmers. Fresh Produce for Families. Zero Middlemen.</span>
+      </div>
+      <div style="font-size:0.8rem; color:#b7e4c7;">
+        ⚖️ Understand Where Every Rupee Goes
+      </div>
+    </div>
+  </div>
+
+  <!-- Header -->
+  <header class="site-header">
+    <div class="container header-main">
+      <a href="index.html" class="logo-link">
+        <div class="logo-icon">🌱</div>
+        <div class="logo-text">Agri<span>Direct</span></div>
+      </a>
+
+      <nav class="main-nav" id="mainNav">
+        <a href="index.html" class="nav-link" data-i18n="nav_home">Home</a>
+        <a href="marketplace.html" class="nav-link" data-i18n="nav_marketplace">Marketplace</a>
+        <a href="price-compare.html" class="nav-link active" data-i18n="nav_price_compare">Price Compare</a>
+        <a href="farmer-dashboard.html" class="nav-link highlight" data-i18n="nav_dashboard">🌾 Farmer Portal</a>
+        <a href="orders.html" class="nav-link" data-i18n="nav_my_orders">My Orders</a>
+      </nav>
+
+      <div class="header-actions">
+        <div class="lang-selector-wrap">
+          <select id="globalLanguageSelect" class="lang-select">
+            <option value="en">🇬🇧 English</option>
+            <option value="te">🇮🇳 తెలుగు (Telugu)</option>
+            <option value="hi">🇮🇳 हिन्दी (Hindi)</option>
+          </select>
+        </div>
+
+        <div class="cart-btn-wrap">
+          <a href="cart.html" class="cart-icon-btn" title="Shopping Cart">
+            🛒
+            <span class="cart-badge" style="display:none;">0</span>
+          </a>
+        </div>
+
+        <div id="headerUserMenu">
+          <a href="auth.html" class="btn btn-sm btn-primary">
+            <span>👤</span> <span data-i18n="nav_login">Login / Register</span>
+          </a>
+        </div>
+
+        <button class="mobile-menu-toggle" id="mobileMenuToggle" aria-label="Toggle Navigation">
+          ☰
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <div style="background:linear-gradient(135deg, #1b4332, #2d6a4f); color:white; padding:3rem 0;">
+      <div class="container text-center" style="text-align:center; max-width:800px; margin:0 auto;">
+        <span class="badge badge-direct" style="margin-bottom:1rem; font-size:0.85rem;">📊 Data-Driven Agriculture Justice</span>
+        <h1 style="font-size:2.4rem; font-weight:800; margin-bottom:0.75rem;">
+          Middleman Price Markup Calculator
+        </h1>
+        <p style="color:#d8f3dc; font-size:1.1rem; line-height:1.6;">
+          "Multiple intermediaries reduce farmers' earnings and increase consumer prices." Select any crop below to see how AgriDirect eliminates middleman exploitation.
+        </p>
+      </div>
+    </div>
+
+    <div class="container" style="margin-top:-2rem; position:relative; z-index:10;">
+      <div class="compare-tool-container">
+        <div class="compare-calculator-grid">
+          <!-- Interactive Controls -->
+          <div class="calc-inputs">
+            <h3 style="font-size:1.3rem; font-weight:800; color:var(--primary-dark); margin-bottom:0.5rem;">
+              1. Select Crop & Quantity
+            </h3>
+
+            <div class="form-group">
+              <label class="form-label">Select Agricultural Crop:</label>
+              <select id="calcCropSelect" class="form-control" style="font-weight:700; font-size:1.05rem;">
+                <option value="tomatoes" data-farmer="24" data-market="45" data-unit="kg">🍅 Farm Fresh Country Tomatoes (₹24 vs ₹45/kg)</option>
+                <option value="onions" data-farmer="28" data-market="50" data-unit="kg">🧅 Nashik Red Sweet Onions (₹28 vs ₹50/kg)</option>
+                <option value="apples" data-farmer="130" data-market="220" data-unit="kg">🍎 Himalayan Royal Apples (₹130 vs ₹220/kg)</option>
+                <option value="rice" data-farmer="56" data-market="85" data-unit="kg">🌾 Aged Sona Masoori Rice (₹56 vs ₹85/kg)</option>
+                <option value="toor_dal" data-farmer="135" data-market="195" data-unit="kg">🥣 Desi Unpolished Toor Dal (₹135 vs ₹195/kg)</option>
+                <option value="ghee" data-farmer="850" data-market="1400" data-unit="liter">🥛 Pure Gir Cow Desi Ghee (₹850 vs ₹1400/L)</option>
+                <option value="chilli" data-farmer="190" data-market="320" data-unit="kg">🌶️ Guntur Teja Spicy Red Chilli (₹190 vs ₹320/kg)</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Purchase Quantity (<span id="calcUnitLabel">kg</span>):</label>
+              <div style="display:flex; align-items:center; gap:1rem;">
+                <input type="range" id="calcQtySlider" min="1" max="100" value="10" style="flex:1; accent-color:var(--primary); height:8px;">
+                <input type="number" id="calcQtyInput" min="1" max="1000" value="10" class="form-control" style="width:90px; text-align:center; font-weight:800; font-size:1.1rem;">
+              </div>
+            </div>
+
+            <!-- Visual Explanations of Intermediary Cuts -->
+            <div style="background:var(--bg-subtle); padding:1.25rem; border-radius:12px; border:1px solid var(--border-color);">
+              <h4 style="font-size:0.95rem; font-weight:700; color:var(--danger); margin-bottom:0.75rem;">
+                🚫 Traditional Middleman Cut Breakdown (Per Kg):
+              </h4>
+              <ul style="font-size:0.85rem; color:var(--text-muted); display:flex; flex-direction:column; gap:0.4rem;">
+                <li>• <strong>Village Agent Commission:</strong> ~10%</li>
+                <li>• <strong>APMC Mandi Commission & Cess:</strong> ~12%</li>
+                <li>• <strong>Multi-tier Transit & Handling:</strong> ~18%</li>
+                <li>• <strong>Wholesaler & City Retailer Margin:</strong> ~25%</li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- Calculation Comparison Output Card -->
+          <div class="calc-breakdown-card">
+            <div>
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; padding-bottom:0.75rem; border-bottom:1px solid rgba(0,0,0,0.1);">
+                <h3 style="font-size:1.2rem; font-weight:800; color:var(--primary-dark);">
+                  ⚖️ Impact Breakdown
+                </h3>
+                <span class="badge badge-organic">Direct vs Mandi</span>
+              </div>
+
+              <!-- Breakdown Rows -->
+              <div class="breakdown-row">
+                <span style="color:var(--danger); font-weight:600;">Traditional Retail Mandi Cost:</span>
+                <span style="font-weight:800; font-size:1.2rem; color:var(--danger);" id="resMandiTotal">₹450</span>
+              </div>
+
+              <div class="breakdown-row">
+                <span style="color:var(--primary-dark); font-weight:700;">AgriDirect Fair Cost:</span>
+                <span style="font-weight:800; font-size:1.35rem; color:var(--primary-dark);" id="resAgriTotal">₹240</span>
+              </div>
+
+              <div class="breakdown-row" style="background:white; padding:0.85rem; border-radius:8px; margin:0.75rem 0; border:1.5px dashed var(--success);">
+                <div>
+                  <div style="font-weight:800; color:#166534; font-size:1.05rem;">💰 Your Household Savings:</div>
+                  <div style="font-size:0.8rem; color:var(--text-muted);">Money kept in your family budget</div>
+                </div>
+                <div style="font-weight:800; font-size:1.4rem; color:var(--success);" id="resSavingsTotal">₹210 (46%)</div>
+              </div>
+
+              <div class="breakdown-row" style="background:white; padding:0.85rem; border-radius:8px; margin-bottom:0.75rem; border:1.5px dashed var(--accent);">
+                <div>
+                  <div style="font-weight:800; color:var(--earth); font-size:1.05rem;">🌾 Farmer Extra Income:</div>
+                  <div style="font-size:0.8rem; color:var(--text-muted);">Direct cash delivered to grower</div>
+                </div>
+                <div style="font-weight:800; font-size:1.4rem; color:var(--accent);" id="resFarmerBonus">₹90 (+60%)</div>
+              </div>
+            </div>
+
+            <div>
+              <a href="marketplace.html" class="btn btn-primary btn-lg btn-full" style="font-weight:800; box-shadow:0 6px 20px rgba(45,106,79,0.3);">
+                🛒 Shop This Produce on AgriDirect →
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div>
+          <div class="logo-link" style="color:white; margin-bottom:1rem;">
+            <div class="logo-icon">🌱</div>
+            <div>Agri<span style="color:var(--accent);">Direct</span></div>
+          </div>
+          <p style="font-size:0.9rem; color:#b7e4c7; line-height:1.6;" data-i18n="footer_mission">
+            AgriDirect empowers Indian farmers by connecting them directly with household consumers, eliminating predatory intermediaries, and restoring dignity and fair profits to agriculture.
+          </p>
+        </div>
+
+        <div>
+          <h4 class="footer-title" data-i18n="footer_links">Quick Links</h4>
+          <ul class="footer-links">
+            <li><a href="index.html" data-i18n="nav_home">Home</a></li>
+            <li><a href="marketplace.html" data-i18n="nav_marketplace">Marketplace</a></li>
+            <li><a href="price-compare.html" data-i18n="nav_price_compare">Price Compare</a></li>
+            <li><a href="farmer-dashboard.html" data-i18n="nav_dashboard">Farmer Dashboard</a></li>
+            <li><a href="orders.html" data-i18n="nav_my_orders">My Orders</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 class="footer-title" data-i18n="filter_category">Produce Categories</h4>
+          <ul class="footer-links">
+            <li><a href="marketplace.html">Fresh Vegetables</a></li>
+            <li><a href="marketplace.html">Orchard Fruits</a></li>
+            <li><a href="marketplace.html">Aged Grains & Rice</a></li>
+            <li><a href="marketplace.html">Desi Pulses & Dals</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 class="footer-title" data-i18n="footer_contact">Farmer Support & Helpline</h4>
+          <p style="font-size:0.9rem; color:#b7e4c7; margin-bottom:0.75rem;">Toll-Free Kisan Helpdesk:</p>
+          <div style="font-size:1.2rem; font-weight:800; color:var(--accent);">1800-425-AGRI (2474)</div>
+          <p style="font-size:0.85rem; color:#95d5b2; margin-top:0.5rem;">support@agridirect.in</p>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <p data-i18n="footer_rights">© 2026 AgriDirect. All Rights Reserved. Empowering Farmers Across India.</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="js/i18n.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/app.js"></script>
+
+  <script>
+    function updateCalculator() {
+      const select = document.getElementById('calcCropSelect');
+      const selectedOpt = select.options[select.selectedIndex];
+      const farmerPrice = parseFloat(selectedOpt.getAttribute('data-farmer'));
+      const marketPrice = parseFloat(selectedOpt.getAttribute('data-market'));
+      const unit = selectedOpt.getAttribute('data-unit');
+      
+      const qtyInput = document.getElementById('calcQtyInput');
+      const qty = parseFloat(qtyInput.value) || 1;
+
+      document.getElementById('calcUnitLabel').textContent = unit;
+
+      const mandiTotal = marketPrice * qty;
+      const agriTotal = farmerPrice * qty;
+      const savings = mandiTotal - agriTotal;
+      const savingsPercent = Math.round((savings / mandiTotal) * 100);
+
+      // Traditional wholesale price farmer normally gets is ~55% of mandi retail
+      const traditionalWholesale = (farmerPrice * 0.6) * qty;
+      const farmerExtra = Math.round(agriTotal - traditionalWholesale);
+      const farmerExtraPercent = Math.round((farmerExtra / traditionalWholesale) * 100);
+
+      document.getElementById('resMandiTotal').textContent = `₹${mandiTotal.toLocaleString('en-IN')}`;
+      document.getElementById('resAgriTotal').textContent = `₹${agriTotal.toLocaleString('en-IN')}`;
+      document.getElementById('resSavingsTotal').textContent = `₹${savings.toLocaleString('en-IN')} (${savingsPercent}%)`;
+      document.getElementById('resFarmerBonus').textContent = `+ ₹${farmerExtra.toLocaleString('en-IN')} (+${farmerExtraPercent}%)`;
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const select = document.getElementById('calcCropSelect');
+      const slider = document.getElementById('calcQtySlider');
+      const input = document.getElementById('calcQtyInput');
+
+      select.addEventListener('change', updateCalculator);
+
+      slider.addEventListener('input', (e) => {
+        input.value = e.target.value;
+        updateCalculator();
+      });
+
+      input.addEventListener('input', (e) => {
+        slider.value = e.target.value;
+        updateCalculator();
+      });
+
+      updateCalculator();
+    });
+  </script>
+</body>
+</html>
