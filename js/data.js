@@ -74,7 +74,7 @@ const DEFAULT_FARMERS = [
 const DEFAULT_PRODUCTS = [
   {
     id: "prod_1",
-    name: "Farm Fresh Country Tomatoes (నాటు టమోటా)",
+    name: "Fresh Tomatoes",
     category: "vegetables",
     farmerId: "farmer_1",
     farmerName: "Ramesh Reddy",
@@ -89,13 +89,13 @@ const DEFAULT_PRODUCTS = [
     isOrganic: true,
     rating: 4.9,
     reviewsCount: 38,
-    image: "https://images.unsplash.com/photo-1592924357228-91a4daadcfea?auto=format&fit=crop&w=600&q=80",
+    image: "https://images-prod.healthline.com/hlcmsresource/images/AN_images/tomatoes-1296x728-feature.jpg",
     description: "Sun-ripened, naturally sweet heirloom country tomatoes harvested early this morning. Packed with natural lycopene and free from artificial ripening chemicals.",
     farmingMethod: "Natural Jeevamrutha manure, zero chemical pesticides"
   },
   {
     id: "prod_2",
-    name: "Nashik Red Sweet Onions (ఎర్ర ఉల్లిపాయలు)",
+    name: "Red Onions",
     category: "vegetables",
     farmerId: "farmer_2",
     farmerName: "Suresh Patil",
@@ -116,7 +116,7 @@ const DEFAULT_PRODUCTS = [
   },
   {
     id: "prod_3",
-    name: "Himalayan Royal Delicious Apples (సిమ్లా ఆపిల్స్)",
+    name: "Delicious Apples",
     category: "fruits",
     farmerId: "farmer_3",
     farmerName: "Rajesh Sharma",
@@ -173,13 +173,13 @@ const DEFAULT_PRODUCTS = [
     isOrganic: true,
     rating: 4.8,
     reviewsCount: 41,
-    image: "https://images.unsplash.com/photo-1585994192701-f1a505c817ea?auto=format&fit=crop&w=600&q=80",
+    image: "https://aramiyarkai.com/admin/uploads/products/toor-dal_U-171.webp",
     description: "Traditional stone-milled unpolished yellow pigeon peas (Toor dal). Retains natural protein layer and cooks into rich golden sambar and dal fry.",
     farmingMethod: "Rainfed dryland organic farming, hand sorted"
   },
   {
     id: "prod_6",
-    name: "Guntur Teja Spicy Red Chilli (గుంటూరు ఎండు మిర్చి)",
+    name: "Guntur Red Chilli",
     category: "spices",
     farmerId: "farmer_1",
     farmerName: "Ramesh Reddy",
@@ -200,7 +200,7 @@ const DEFAULT_PRODUCTS = [
   },
   {
     id: "prod_7",
-    name: "Pure A2 Gir Cow Desi Ghee (స్వచ్ఛమైన ఆవు నెయ్యి - Bilona Method)",
+    name: "Pure Cow Desi Ghee",
     category: "dairy",
     farmerId: "farmer_5",
     farmerName: "Mahesh Gowda",
@@ -215,7 +215,7 @@ const DEFAULT_PRODUCTS = [
     isOrganic: true,
     rating: 5.0,
     reviewsCount: 77,
-    image: "https://images.unsplash.com/photo-1631451095765-2c91616fc9e6?auto=format&fit=crop&w=600&q=80",
+    image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS7NAyvPLrk1wIxJd5ZHnT5w8YUtgH7Ad81Tvl351eKaFyGEvPxPHg64A&s=10",
     description: "Prepared from grass-fed indigenous Gir cow curd churned with wooden bilona and slow-cooked over firewood. Rich granular texture and soothing aroma.",
     farmingMethod: "Cruelty-free traditional gaushala, open pasture grazing"
   },
@@ -257,13 +257,13 @@ const DEFAULT_PRODUCTS = [
     isOrganic: true,
     rating: 4.8,
     reviewsCount: 31,
-    image: "https://images.unsplash.com/photo-1517282009859-f000ec3b26fe?auto=format&fit=crop&w=600&q=80",
+    image: "https://cdn.jwplayer.com/v2/media/8wwjD9bR/poster.jpg?width=1280",
     description: "Sweet, juicy Red Lady variety papayas ripened naturally under tree foliage without calcium carbide or chemical gas treatments.",
     farmingMethod: "Bio-fertilizers, organic mulch"
   },
   {
     id: "prod_10",
-    name: "Salem Lakadong High-Curcumin Turmeric (పసుపు కొమ్ములు/పొడి)",
+    name: "Raw Turmeric",
     category: "spices",
     farmerId: "farmer_1",
     farmerName: "Ramesh Reddy",
@@ -278,13 +278,13 @@ const DEFAULT_PRODUCTS = [
     isOrganic: true,
     rating: 5.0,
     reviewsCount: 49,
-    image: "https://images.unsplash.com/photo-1615485290382-441e4d049cb5?auto=format&fit=crop&w=600&q=80",
+    image: "https://cdn.shopaccino.com/rootz/products/picture2-351439520275241_m.jpg?v=686",
     description: "Pure heirloom turmeric with over 5.8% natural curcumin content. Solar dried and finely ground without any lead chromate or artificial coloring.",
     farmingMethod: "Traditional natural farming, steam boiled and solar dried"
   },
   {
     id: "prod_11",
-    name: "Sharbati Whole Wheat Grain (శర్బతి గోధుమలు)",
+    name: "Whole Wheat Grain",
     category: "grains",
     farmerId: "farmer_5",
     farmerName: "Mahesh Gowda",
@@ -320,7 +320,7 @@ const DEFAULT_PRODUCTS = [
     isOrganic: true,
     rating: 4.9,
     reviewsCount: 36,
-    image: "https://images.unsplash.com/photo-1601050690597-df0568f70950?auto=format&fit=crop&w=600&q=80",
+    image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRWK8YAEuLRb1yefJKpMj7iOtRrkgbQuZiv1z7wWZdAJpHBnl_wMttS7a6U&s=10",
     description: "High-sprouting rate whole green gram (moong). Perfect for healthy raw salad sprouts, pesarattu dosas, and nourishing khichdi.",
     farmingMethod: "Intercropped with organic millets, chemical-free"
   }
@@ -399,6 +399,15 @@ const AgriData = {
     }
     if (!localStorage.getItem('agri_products')) {
       localStorage.setItem('agri_products', JSON.stringify(DEFAULT_PRODUCTS));
+    } else {
+      try {
+        const storedProducts = JSON.parse(localStorage.getItem('agri_products') || '[]');
+        const updated = storedProducts.map(p => {
+          const def = DEFAULT_PRODUCTS.find(dp => dp.id === p.id);
+          return def ? { ...p, name: def.name, image: def.image } : p;
+        });
+        localStorage.setItem('agri_products', JSON.stringify(updated));
+      } catch (e) {}
     }
     if (!localStorage.getItem('agri_orders')) {
       localStorage.setItem('agri_orders', JSON.stringify(DEFAULT_ORDERS));
