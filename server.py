@@ -105,6 +105,7 @@ class AgriDirectServerHandler(SimpleHTTPRequestHandler):
                 "app": "AgriDirect",
                 "ai_assistant": "active",
                 "ai_configured": ai_manager.is_ai_configured(),
+                "model": ai_manager.get_model_name(),
                 "provider": ai_manager.get_provider_name(),
                 "supported_languages_count": 23
             }
@@ -185,11 +186,11 @@ class AgriDirectServerHandler(SimpleHTTPRequestHandler):
                         "location": clean_str(raw_ctx.get("location"), 60)
                     }
 
-                # 5. Sanitize conversation history
+                # 5. Sanitize conversation history (up to 10 previous turns)
                 history = []
                 raw_history = data.get("history", [])
                 if isinstance(raw_history, list):
-                    for h in raw_history[-6:]:
+                    for h in raw_history[-10:]:
                         if isinstance(h, dict) and "role" in h and "content" in h:
                             role = "user" if h.get("role") == "user" else "assistant"
                             content = clean_str(h.get("content", ""), 500)
@@ -246,6 +247,7 @@ def run_server(port=PORT):
     print(f"  [AgriDirect Server & AI Assistant Running]")
     print(f"  URL: http://localhost:{port}/")
     print(f"  AI Provider: {ai_manager.get_provider_name()}")
+    print(f"  AI Model: {ai_manager.get_model_name()}")
     print(f"  AI Key Configured: {ai_manager.is_ai_configured()}")
     print(f"==================================================")
     try:

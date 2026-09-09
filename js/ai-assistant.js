@@ -1,7 +1,8 @@
 /**
  * AgriDirect AI Assistant - Frontend Controller & UI
  * Seamless integration with all 23 languages, real marketplace data grounding,
- * farmer/consumer context, RTL layout support, and secure backend routing.
+ * Web Speech API voice assistance, farmer/consumer context, RTL layout support,
+ * and secure backend routing.
  */
 
 (function () {
@@ -89,10 +90,39 @@
     sat: "ᱪᱟᱥ, ᱫᱟᱢ, ᱡᱤᱱᱤᱥ ᱵᱟᱵᱚᱛ ᱠᱩᱞᱤᱭ ᱢᱮ..."
   };
 
+  // Standard Indian BCP-47 Speech Recognition tags mapping
+  const SPEECH_LANG_MAP = {
+    en: 'en-IN',
+    hi: 'hi-IN',
+    te: 'te-IN',
+    bn: 'bn-IN',
+    mr: 'mr-IN',
+    ta: 'ta-IN',
+    gu: 'gu-IN',
+    kn: 'kn-IN',
+    ml: 'ml-IN',
+    pa: 'pa-IN',
+    or: 'or-IN',
+    as: 'as-IN',
+    ur: 'ur-IN',
+    ne: 'ne-NP',
+    kok: 'kok-IN',
+    sa: 'sa-IN',
+    mai: 'mai-IN',
+    doi: 'doi-IN',
+    ks: 'ks-IN',
+    sd: 'sd-IN',
+    mni: 'mni-IN',
+    brx: 'brx-IN',
+    sat: 'sat-IN'
+  };
+
   // State Management
   let chatOpen = false;
   let messages = [];
   let isAwaitingReply = false;
+  let speechRecognizer = null;
+  let isListening = false;
 
   function getCurrentLang() {
     return localStorage.getItem('agri_lang') || 'en';
@@ -199,7 +229,7 @@
               placeholder="Ask about farming, prices, products..." 
               autocomplete="off"
             />
-            <button id="agriAiMicBtn" class="agri-ai-btn-mic" title="Voice Input (Coming Soon)" aria-label="Voice input">
+            <button id="agriAiMicBtn" class="agri-ai-btn-mic" title="Voice Input" aria-label="Voice input">
               🎙️
             </button>
             <button id="agriAiSendBtn" class="agri-ai-btn-send" title="Send Message" aria-label="Send message">
@@ -268,8 +298,8 @@
       });
     }
 
-    // Update Input Placeholder
-    if (inputEl) {
+    // Update Input Placeholder (if not currently recording speech)
+    if (inputEl && !isListening) {
       inputEl.placeholder = PLACEHOLDERS[lang] || PLACEHOLDERS.en;
     }
   }
@@ -277,7 +307,6 @@
   // Toggle Assistant Panel
   function toggleChat(open) {
     const panel = document.getElementById('agriAiChatPanel');
-    const btn = document.getElementById('agriAiToggleBtn');
     if (!panel) return;
 
     chatOpen = typeof open === 'boolean' ? open : !chatOpen;
@@ -288,6 +317,110 @@
       const input = document.getElementById('agriAiInput');
       if (input) setTimeout(() => input.focus(), 150);
       scrollToBottom();
+    } else {
+      // Stop speech recognition when closing panel
+      if (isListening && speechRecognizer) {
+        try { speechRecognizer.stop(); } catch (e) {}
+        setListeningState(false);
+      }
+    }
+  }
+
+  // Voice Input: Web Speech API Integration
+  function setListeningState(listening) {
+    isListening = listening;
+    const micBtn = document.getElementById('agriAiMicBtn');
+    const input = document.getElementById('agriAiInput');
+    const lang = getCurrentLang();
+
+    if (micBtn) {
+      if (listening) {
+        micBtn.classList.add('listening');
+        micBtn.setAttribute('title', 'Listening... Click to stop');
+        micBtn.setAttribute('aria-label', 'Listening... Click to stop');
+      } else {
+        micBtn.classList.remove('listening');
+        micBtn.setAttribute('title', 'Voice Input');
+        micBtn.setAttribute('aria-label', 'Voice input');
+      }
+    }
+
+    if (input) {
+      if (listening) {
+        input.placeholder = "🎙️ Listening... Speak now in your language...";
+      } else {
+        input.placeholder = PLACEHOLDERS[lang] || PLACEHOLDERS.en;
+      }
+    }
+  }
+
+  function toggleVoiceInput() {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      appendMessage('assistant', '⚠️ **Voice Input Notice**: Speech recognition is not supported in this browser. Please use Google Chrome, Microsoft Edge, or a Web Speech API-compatible browser.');
+      return;
+    }
+
+    if (isListening && speechRecognizer) {
+      try {
+        speechRecognizer.stop();
+      } catch (e) {}
+      setListeningState(false);
+      return;
+    }
+
+    try {
+      speechRecognizer = new SpeechRecognition();
+      speechRecognizer.continuous = false;
+      speechRecognizer.interimResults = false;
+      speechRecognizer.maxAlternatives = 1;
+
+      const lang = getCurrentLang();
+      speechRecognizer.lang = SPEECH_LANG_MAP[lang] || 'en-IN';
+
+      speechRecognizer.onstart = function () {
+        setListeningState(true);
+      };
+
+      speechRecognizer.onresult = function (event) {
+        setListeningState(false);
+        if (event.results && event.results[0] && event.results[0][0]) {
+          const transcript = event.results[0][0].transcript.trim();
+          if (transcript) {
+            const input = document.getElementById('agriAiInput');
+            if (input) input.value = transcript;
+            sendMessage(transcript);
+            if (input) input.value = '';
+          }
+        }
+      };
+
+      speechRecognizer.onerror = function (event) {
+        setListeningState(false);
+        if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+          appendMessage('assistant', '⚠️ **Microphone Permission Denied**: Please allow microphone access in your browser settings to speak to AgriDirect AI.');
+        } else if (event.error === 'language-not-supported') {
+          // Fallback retry with en-IN
+          try {
+            speechRecognizer.lang = 'en-IN';
+            speechRecognizer.start();
+          } catch (e) {
+            setListeningState(false);
+          }
+        } else if (event.error !== 'no-speech') {
+          console.warn('SpeechRecognition warning:', event.error);
+        }
+      };
+
+      speechRecognizer.onend = function () {
+        setListeningState(false);
+      };
+
+      speechRecognizer.start();
+    } catch (err) {
+      setListeningState(false);
+      console.warn('SpeechRecognition initialization error:', err);
     }
   }
 
@@ -334,10 +467,7 @@
     }
 
     if (micBtn) {
-      micBtn.addEventListener('click', () => {
-        // Voice assistance feedback
-        alert("🎙️ Voice assistance feature is ready for microphone capture. Type your query or select a quick action!");
-      });
+      micBtn.addEventListener('click', toggleVoiceInput);
     }
 
     // Listen to language changes across AgriDirect
@@ -399,12 +529,13 @@
     const pageContext = getPageContext();
     const userContext = getUserContext();
 
+    // Preserve up to 10 conversation history turns for rich multi-turn context
     const payload = {
       message: userQuery,
       language: lang,
       pageContext: pageContext,
       userContext: userContext,
-      history: messages.slice(-4)
+      history: messages.slice(-10)
     };
 
     try {
@@ -426,7 +557,7 @@
       }
       throw new Error("Backend response error");
     } catch (err) {
-      // 2. Client-side grounded fallback (supports direct file:/// testing without server)
+      // 2. Client-side grounded fallback (covers all 12 crops and provides informative guidance)
       const fallbackReply = generateClientFallback(userQuery, lang, userContext);
       setTyping(false);
       appendMessage('assistant', fallbackReply);
@@ -434,24 +565,83 @@
     }
   }
 
-  // Client Grounded Responder for standalone / offline operations
+  // Client Grounded Responder covering all 12 crops and verified marketplace data
   function generateClientFallback(query, lang, userContext) {
     const q = query.toLowerCase();
 
-    // Check Tomato
-    if (q.includes('tomato') || q.includes('టమాట') || q.includes('टमाटर') || q.includes('தக்காளி') || q.includes('ٹماٹر')) {
+    function has(keywords) {
+      return keywords.some(kw => {
+        if (/^[a-zA-Z0-9\s]+$/.test(kw)) {
+          return new RegExp('\\b' + kw.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'i').test(q);
+        }
+        return q.includes(kw);
+      });
+    }
+
+    // 1. Tomatoes
+    if (has(['tomato', 'tomatoes', 'టమాట', 'టమాటా', 'टमाटर', 'தக்காளி', 'ٹماٹر'])) {
       if (lang === 'te') {
-        return "🌱 **Fresh Tomatoes ధర వివరాలు:**\n• రైతు ప్రత్యక్ష ధర: **₹24/kg**\n• మార్కెట్ ధర: ₹45/kg\n• మీ పొదుపు: **₹21/kg (47% ఆదా!)**\n• రైతు: **Ramesh Reddy** (Guntur)\n• అందుబాటులో ఉన్న నిల్వ: 450 kg (సేంద్రీయ పద్ధతి)\n\nమధ్యవర్తులు లేరు — 100% మీ సొమ్ము రైతుకే చేరుతుంది!";
+        return "🌱 **Fresh Tomatoes (నాటు టమాటాలు):**\n• రైతు ప్రత్యక్ష ధర: **₹24/kg**\n• మార్కెట్/మండి ధర: ₹45/kg\n• మీకు ఆదా: **₹21/kg (47% ఆదా!)**\n• రైతు: **Ramesh Reddy** (Guntur, AP)\n• అందుబాటులో ఉన్న నిల్వ: 450 kg (సేంద్రీయ పద్ధతి)\n\nమధ్యవర్తులు లేరు — 100% మీ సొమ్ము రైతుకే చేరుతుంది!";
       } else if (lang === 'hi') {
-        return "🌱 **ताज़ा टमाटर के दाम:**\n• किसान का सीधा दाम: **₹24/किलो**\n• मंडी/बाज़ार का दाम: ₹45/किलो\n• आपकी बचत: **₹21/किलो (47% बचत!)**\n• किसान: **Ramesh Reddy** (गुंटूर)\n• स्टॉक: 450 किलो (प्राकृतिक जैविक खेती)\n\nAgriDirect पर खरीदने से पूरा पैसा सीधे किसान को मिलता है।";
+        return "🌱 **ताज़ा टमाटर (Fresh Tomatoes):**\n• किसान का सीधा दाम: **₹24/किलो**\n• मंडी दाम: ₹45/किलो\n• आपकी बचत: **₹21/किलो (47% बचत!)**\n• किसान: **Ramesh Reddy** (गुंटूर)\n• स्टॉक: 450 किलो (प्राकृतिक खेती)";
       } else {
-        return "🌱 **Fresh Tomatoes Transparent Price Breakdown:**\n• Direct Farmer Price: **₹24/kg**\n• Mandi / Retail Price: ₹45/kg\n• Direct Consumer Savings: **₹21/kg (47% savings!)**\n• Verified Farmer: **Ramesh Reddy** (Guntur, Andhra Pradesh)\n• Available Stock: 450 kg (100% Certified Organic)\n\nZero middlemen take a cut — 100% of your payment goes directly to the grower.";
+        return "🌱 **Fresh Tomatoes Transparent Price Breakdown:**\n• Direct Farmer Price: **₹24/kg**\n• Mandi / Retail Price: ₹45/kg\n• Direct Consumer Savings: **₹21/kg (47% savings!)**\n• Verified Farmer: **Ramesh Reddy** (Guntur, Andhra Pradesh)\n• Available Stock: 450 kg (100% Certified Organic)";
       }
     }
 
-    // Check Onion
-    if (q.includes('onion') || q.includes('ఉల్లి') || q.includes('प्याज') || q.includes('வெங்காயம்') || q.includes('پیاز')) {
-      return "🌱 **Red Onions Price Breakdown:**\n• Direct Farmer Price: **₹22/kg**\n• Mandi Retail: ₹38/kg\n• You Save: **₹16/kg (42% savings!)**\n• Farmer: **Suresh Patil** (Nashik, Maharashtra)\n• Available Stock: 800 kg.";
+    // 2. Onions
+    if (has(['onion', 'onions', 'ఉల్లి', 'प्याज', 'வெங்காயம்', 'پیاز'])) {
+      return "🌱 **Red Onions (ఎర్ర ఉల్లిపాయలు):**\n• Direct Farmer Price: **₹22/kg** (Mandi Retail: ₹38/kg)\n• Direct Savings: **₹16/kg (42% savings!)**\n• Verified Farmer: **Suresh Patil** (Nashik, Maharashtra)\n• Available Stock: 800 kg.";
+    }
+
+    // 3. Apples
+    if (has(['apple', 'apples', 'ఆపిల్', 'సేబు', 'ஆப்பிள்', 'سیب'])) {
+      return "🌱 **Delicious Mountain Apples (హిమాచల్ ఆపిల్స్):**\n• Direct Farmer Price: **₹95/kg** (Mandi Retail: ₹160/kg)\n• Direct Savings: **₹65/kg (41% savings!)**\n• Verified Farmer: **Rajesh Sharma** (Shimla, Himachal Pradesh)\n• Available Stock: 320 kg (Organic).";
+    }
+
+    // 4. Rice / Sona Masoori
+    if (has(['rice', 'sona masoori', 'paddy', 'బియ్యం', 'వరి', 'चावल', 'அரிசி', 'چاول'])) {
+      return "🌱 **Aged Sona Masoori Rice (పాత సోనా మసూరి బియ్యం):**\n• Direct Farmer Price: **₹52/kg** (Mandi Retail: ₹75/kg)\n• Direct Savings: **₹23/kg (31% savings!)**\n• Verified Farmer: **Mahesh Gowda** (Mandya, Karnataka)\n• Available Stock: 1200 kg (12-month aged unpolished paddy).";
+    }
+
+    // 5. Toor Dal
+    if (has(['toor dal', 'toordal', 'arhar', 'కందిపప్పు', 'अरहर', 'துவரம்'])) {
+      return "🌱 **Desi Unpolished Toor Dal (నాటు కందిపప్పు):**\n• Direct Farmer Price: **₹135/kg** (Mandi Retail: ₹190/kg)\n• Direct Savings: **₹55/kg (29% savings!)**\n• Verified Farmer: **Kavitha Rao** (Warangal, Telangana)\n• Available Stock: 250 kg (Chemical-free, unpolished).";
+    }
+
+    // 6. Guntur Chilli
+    if (has(['chilli', 'chili', 'chillies', 'mirchi', 'మిర్చి', 'मिर्च', 'மிளகாய்'])) {
+      return "🌱 **Guntur Red Chilli (గుంటూరు ఎండుమిర్చి S17):**\n• Direct Farmer Price: **₹180/kg** (Mandi Retail: ₹260/kg)\n• Direct Savings: **₹80/kg (31% savings!)**\n• Verified Farmer: **Ramesh Reddy** (Guntur, Andhra Pradesh)\n• Available Stock: 180 kg (Sun-dried, high pungency).";
+    }
+
+    // 7. Ghee
+    if (has(['ghee', 'cow ghee', 'నెయ్యి', 'घी', 'நெய்', 'گھی'])) {
+      return "🌱 **Pure Cow Desi Ghee (ఆవు నెయ్యి - వేద బిలోనా):**\n• Direct Farmer Price: **₹650/liter** (Mandi Retail: ₹950/liter)\n• Direct Savings: **₹300/liter (32% savings!)**\n• Verified Farmer: **Ramesh Reddy** (Guntur, Andhra Pradesh)\n• Available Stock: 60 liters (A2 Vedic Curd Churned).";
+    }
+
+    // 8. Palak Spinach
+    if (has(['spinach', 'palak', 'పాలకూర', 'पालक', 'கீரை'])) {
+      return "🌱 **Fresh Organic Green Palak (తాజా పాలకూర):**\n• Direct Farmer Price: **₹18/bunch** (Mandi Retail: ₹30/bunch)\n• Direct Savings: **₹12/bunch (40% savings!)**\n• Verified Farmer: **Kavitha Rao** (Warangal, Telangana)\n• Available Stock: 120 bunches (Picked daily).";
+    }
+
+    // 9. Papaya
+    if (has(['papaya', 'బొప్పాయి', 'पपीता', 'பப்பாளி'])) {
+      return "🌱 **Tree-Ripened Golden Papaya (తీపి బొప్పాయి):**\n• Direct Farmer Price: **₹28/kg** (Mandi Retail: ₹50/kg)\n• Direct Savings: **₹22/kg (44% savings!)**\n• Verified Farmer: **Suresh Patil** (Nashik, Maharashtra)\n• Available Stock: 210 kg (Carbide-free, naturally ripened).";
+    }
+
+    // 10. Turmeric
+    if (has(['turmeric', 'haldi', 'పసుపు', 'हल्दी', 'மஞ்சள்'])) {
+      return "🌱 **Raw Indigenous Turmeric (సహజ పసుపు కొమ్ములు):**\n• Direct Farmer Price: **₹120/kg** (Mandi Retail: ₹180/kg)\n• Direct Savings: **₹60/kg (33% savings!)**\n• Verified Farmer: **Kavitha Rao** (Warangal, Telangana)\n• Available Stock: 140 kg (High 5.2% curcumin).";
+    }
+
+    // 11. Wheat
+    if (has(['wheat', 'sharbati', 'గోధుమలు', 'गेहूँ', 'கோதுமை', 'گندم'])) {
+      return "🌱 **Whole Wheat Grain (షర్బతి గోధుమలు):**\n• Direct Farmer Price: **₹36/kg** (Mandi Retail: ₹52/kg)\n• Direct Savings: **₹16/kg (31% savings!)**\n• Verified Farmer: **Suresh Patil** (Nashik, Maharashtra)\n• Available Stock: 900 kg (Stone-ground quality).";
+    }
+
+    // 12. Moong Dal
+    if (has(['moong dal', 'moong', 'పెసరపప్పు', 'मूंग', 'பாசி'])) {
+      return "🌱 **Green Moong Dal - Whole Desi (నాటు పెసరపప్పు):**\n• Direct Farmer Price: **₹110/kg** (Mandi Retail: ₹155/kg)\n• Direct Savings: **₹45/kg (29% savings!)**\n• Verified Farmer: **Mahesh Gowda** (Mandya, Karnataka)\n• Available Stock: 310 kg (Rich protein).";
     }
 
     // Check Orders
@@ -462,11 +652,38 @@
 
     // Check Sell / List Crop
     if (q.includes('sell') || q.includes('list') || q.includes('అమ్మకం') || q.includes('बेचना') || q.includes('فروخت')) {
-      return "👨‍🌾 **How to Sell Your Harvest on AgriDirect:**\n1. Login with your Farmer account.\n2. Open your **Farmer Dashboard**.\n3. Click **'+ List New Product'**.\n4. Set your fair price per kg/unit and available stock.\n5. Publish instantly for conscious consumers!";
+      return "👨‍🌾 **How to Sell Your Harvest on AgriDirect:**\n1. Login with your Farmer account.\n2. Open your **Farmer Dashboard**.\n3. Click **'+ List New Product'**.\n4. Set your fair price per kg/unit, stock, and photo.\n5. Publish instantly for conscious consumers across your district!";
     }
 
-    // Default friendly response
-    return GREETINGS[lang] || GREETINGS.en;
+    // Check Price comparison / savings
+    if (q.includes('compare') || q.includes('saving') || q.includes('middleman') || q.includes('పోలిక') || q.includes('दाम')) {
+      return "📊 **AgriDirect Price Comparison:**\nIn traditional markets, 4-6 middlemen consume up to 60% of product value.\nOn AgriDirect:\n• Farmers earn ~40% more.\n• Consumers save ~30%.\nUse the interactive [Price Compare](price-compare.html) page to calculate your exact household savings!";
+    }
+
+    // Check Vegetables under ₹50
+    if (q.includes('50') || q.includes('cheap') || q.includes('vegetable') || q.includes('కూరగాయలు') || q.includes('सब्जी')) {
+      return "🥬 **Fresh Produce Under ₹50/kg:**\n• Fresh Tomatoes: ₹24/kg (Mandi: ₹45/kg)\n• Red Onions: ₹22/kg (Mandi: ₹38/kg)\n• Fresh Palak Spinach: ₹18/bunch (Mandi: ₹30/bunch)\n• Tree-Ripened Papaya: ₹28/kg (Mandi: ₹50/kg)\n• Whole Wheat Grain: ₹36/kg (Mandi: ₹52/kg)\nFind them right now on the **[Marketplace](marketplace.html)**!";
+    }
+
+    // Check Farming Advice / Soil / Pests
+    if (q.includes('yield') || q.includes('pest') || q.includes('soil') || q.includes('fertilizer') || q.includes('దిగుబడి') || q.includes('పురుగు')) {
+      return "🌾 **Safe Farming & Soil Health Guidance:**\n• Boost soil organic carbon with Jeevamrutha and vermicompost.\n• For safe natural pest control, spray cold-pressed Neem oil (10,000 PPM) early morning or evening.\n• Rotate crops with leguminous pulses (Toor/Moong Dal) to naturally fix nitrogen.\n\n⚠️ *Safety Note: Always inspect product labels and consult your local Krishi Vigyan Kendra (KVK) extension officer.*";
+    }
+
+    // Check Greetings
+    const greetingWords = ["hi", "hello", "hey", "namaste", "namaskar", "vanakkam", "pranam", "adaab", "salam", "నమస్తే", "హలో", "नमस्ते", "வணக்கம்", "help", "who are you"];
+    if (greetingWords.some(w => q === w || q.startsWith(w + ' ') || q.endsWith(' ' + w))) {
+      return GREETINGS[lang] || GREETINGS.en;
+    }
+
+    // Unrecognized query: Informative offline notice (NEVER repeat generic greeting loop)
+    if (lang === 'te') {
+      return "🌾 **అగ్రిడైరెక్ట్ ఆఫ్‌లైన్ మార్కెట్‌ప్లేస్ మోడ్:**\nప్రస్తుతం నేను లైవ్ AI సర్వర్ లేకుండా ధృవీకరించబడిన ఆఫ్‌లైన్ మార్కెట్‌ప్లేస్ మోడ్‌లో పనిచేస్తున్నాను.\n\nమీరు ఈ క్రింది అంశాలపై నన్ను అడగవచ్చు:\n• **పంటల ధరలు & పొదుపు**: టమాటాలు, ఉల్లిపాయలు, ఆపిల్స్, బియ్యం, కందిపప్పు, మిర్చి, నెయ్యి, పాలకూర, బొప్పాయి, పసుపు, గోధుమలు, పెసరపప్పు.\n• **ధరల పోలిక**: దళారులు లేకుండా పొదుపు లెక్కలు.\n• **పంట అమ్మకం**: ఫార్మర్ డాష్‌బోర్డ్‌లో పంటను చేర్చడం.\n• **ఆర్డర్ల ట్రాకింగ్**: మీ ఆర్డర్ వివరాలు.\n• **బడ్జెట్ కూరగాయలు**: రూ. 50 లోపు లభించే పంటలు.\n\nదయచేసి పై అంశాలలో ఒకదానిని అడగండి లేదా క్విక్ బటన్లను ఉపయోగించండి!";
+    } else if (lang === 'hi') {
+      return "🌾 **AgriDirect ऑफलाइन बाज़ार सूचना:**\nवर्तमान में मैं बिना लाइव AI कनेक्शन के प्रमाणित AgriDirect बाज़ार मोड में काम कर रहा हूँ।\n\nआप मुझसे इन विषयों पर जानकारी ले सकते हैं:\n• **फसलों के दाम**: टमाटर, प्याज, सेब, चावल, अरहर दाल, मिर्च, घी, पालक, पपीता, हल्दी, गेहूँ या मूँग दाल।\n• **मूल्य तुलना**: बिचौलियों के बिना किसान को 40% अधिक आय और उपभोक्ता को 30% बचत।\n• **फसल बेचना**: किसान डैशबोर्ड पर फसल जोड़ने की विधि।\n• **ऑर्डर स्थिति**: अपने ताज़ा ऑर्डर को ट्रैक करने का तरीका।\n• **सस्ती सब्जियां**: ₹50/किलो से कम कीमत वाले ताज़ा उत्पाद।";
+    } else {
+      return "🌾 **AgriDirect Grounded Mode Notice:**\nI am currently operating in verified offline marketplace mode without an active external LLM connection.\n\nHere are verified marketplace topics I can immediately assist you with:\n• **Direct Crop Prices & Savings**: Ask about Tomatoes, Onions, Apples, Rice, Toor Dal, Chilli, Ghee, Palak Spinach, Papaya, Turmeric, Wheat, or Moong Dal.\n• **Price Comparison**: Learn how AgriDirect eliminates middlemen to deliver fair prices.\n• **Selling Harvest**: Step-by-step guidance for farmers to list crops on the Farmer Dashboard.\n• **Orders & Delivery**: How to track active farm orders and contact growers.\n• **Budget Produce**: Fresh organic vegetables under ₹50/kg.\n• **Safe Farming Advice**: Organic pest control (Neem oil) and soil health tips.\n\nPlease choose one of these topics or use the Quick Action chips above!";
+    }
   }
 
   // Simple Markdown Formatter for bold, bullet points, and safe links
@@ -520,7 +737,8 @@
   window.AgriDirectAI = {
     open: () => toggleChat(true),
     close: () => toggleChat(false),
-    sendMessage: (msg) => sendMessage(msg)
+    sendMessage: (msg) => sendMessage(msg),
+    toggleVoice: () => toggleVoiceInput()
   };
 
 })();

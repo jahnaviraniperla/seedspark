@@ -6,10 +6,14 @@ Zero external pip dependencies required.
 """
 
 import os
+import sys
 import json
 import re
 import urllib.request
 import urllib.error
+
+# Default Gemini model configurable via environment variable
+DEFAULT_GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-1.5-flash")
 
 # System prompt defining persona, safety, and operational constraints
 AGRI_SYSTEM_PROMPT = """You are "AgriDirect AI — Your Smart Farming & Marketplace Assistant".
@@ -139,15 +143,73 @@ class BaseAIProvider:
 
 
 class GeminiProvider(BaseAIProvider):
-    """Provider integrating with Google Gemini REST API."""
-    def __init__(self, api_key: str, model_name: str = "gemini-1.5-flash"):
+    """Provider integrating with Google Gemini REST API with multi-turn support."""
+
+    def __init__(self, api_key: str, model_name: str = None):
         self.api_key = api_key
-        self.model_name = model_name
+        self.model_name = model_name or os.environ.get("GEMINI_MODEL", DEFAULT_GEMINI_MODEL)
+
+    def _sanitize_log(self, text: str) -> str:
+        """Sanitizes text to prevent API keys or secrets from leaking in console logs."""
+        if not text:
+            return ""
+        if self.api_key:
+            text = text.replace(self.api_key, "[REDACTED_API_KEY]")
+        text = re.sub(r'([?&]key=|[xX]-[gG]oog-[aA]pi-[kK]ey[:=\s]+)[a-zA-Z0-9_\-]+', r'\1[REDACTED]', text)
+        text = re.sub(r'AIza[0-9A-Za-z-_]{35}', '[REDACTED_API_KEY]', text)
+        return text
+
+    def _build_gemini_contents(self, user_query: str, history: list = None) -> list:
+        """
+        Converts conversation history and the current user query into valid Gemini REST contents.
+        Enforces Gemini API rules:
+        - Roles must alternate strictly between 'user' and 'model'.
+        - First turn must be 'user' (leading assistant greetings are omitted).
+        - Consecutive turns with identical roles are merged.
+        - Final turn is the current user query with role 'user'.
+        """
+        raw_turns = []
+        if history and isinstance(history, list):
+            for h in history:
+                if not isinstance(h, dict):
+                    continue
+                role_val = h.get("role", "")
+                content_val = (h.get("content") or "").strip()
+                if not content_val:
+                    continue
+                # Map assistant -> model, user -> user
+                gemini_role = "model" if role_val in ("assistant", "model") else "user"
+                raw_turns.append((gemini_role, content_val))
+
+        alternating_turns = []
+        for role, text in raw_turns:
+            if not alternating_turns:
+                # Gemini contents must begin with 'user'
+                if role != "user":
+                    continue
+                alternating_turns.append({"role": "user", "parts": [{"text": text}]})
+            else:
+                if alternating_turns[-1]["role"] == role:
+                    # Merge consecutive turns of same role
+                    alternating_turns[-1]["parts"][0]["text"] += f"\n\n{text}"
+                else:
+                    alternating_turns.append({"role": role, "parts": [{"text": text}]})
+
+        # Append current user query
+        clean_query = (user_query or "").strip()
+        if not alternating_turns:
+            alternating_turns.append({"role": "user", "parts": [{"text": clean_query}]})
+        elif alternating_turns[-1]["role"] == "user":
+            alternating_turns[-1]["parts"][0]["text"] += f"\n\n{clean_query}"
+        else:
+            alternating_turns.append({"role": "user", "parts": [{"text": clean_query}]})
+
+        return alternating_turns
 
     def generate_response(self, user_query: str, language_code: str, page_context: str = "", user_context: dict = None, history: list = None) -> str:
         lang_name = LANGUAGE_NAMES.get(language_code, "English")
         system_instruction = AGRI_SYSTEM_PROMPT.format(language_name=lang_name, language_code=language_code)
-        
+
         # Build context prompt
         catalog_summary = "\n".join([
             f"- {p['name']} ({p['category']}): Direct Farmer Price ₹{p['farmerPrice']}/{p['unit']} (Mandi Retail ₹{p['marketPrice']}), Farmer: {p['farmer']} from {p['location']}, Stock: {p['stock']} {p['unit']}, Organic: {p['isOrganic']}"
@@ -160,17 +222,17 @@ class GeminiProvider(BaseAIProvider):
         if user_context and user_context.get("name"):
             context_info += f"\nAUTHENTICATED USER CONTEXT: Name: {user_context.get('name')}, Role: {user_context.get('role', 'consumer')}\n"
 
+        full_system_text = f"{system_instruction}\n{context_info}"
+        gemini_contents = self._build_gemini_contents(user_query=user_query, history=history)
+
         prompt_payload = {
-            "contents": [
-                {
-                    "parts": [
-                        {"text": f"{system_instruction}\n{context_info}\nUser Message: {user_query}"}
-                    ]
-                }
-            ],
+            "system_instruction": {
+                "parts": [{"text": full_system_text}]
+            },
+            "contents": gemini_contents,
             "generationConfig": {
                 "temperature": 0.4,
-                "maxOutputTokens": 600
+                "maxOutputTokens": 800
             }
         }
 
@@ -184,14 +246,57 @@ class GeminiProvider(BaseAIProvider):
         req = urllib.request.Request(endpoint, data=json.dumps(prompt_payload).encode("utf-8"), headers=headers, method="POST")
 
         try:
-            with urllib.request.urlopen(req, timeout=12) as response:
+            with urllib.request.urlopen(req, timeout=14) as response:
                 res_data = json.loads(response.read().decode("utf-8"))
-                candidate = res_data.get("candidates", [{}])[0]
-                parts = candidate.get("content", {}).get("parts", [{}])
-                reply = parts[0].get("text", "")
-                return reply.strip()
-        except Exception:
-            # Completely suppress and shield exceptions to guarantee zero key leakage in logs
+                candidates = res_data.get("candidates", [])
+                if candidates:
+                    parts = candidates[0].get("content", {}).get("parts", [])
+                    if parts:
+                        reply = parts[0].get("text", "")
+                        return reply.strip()
+                return ""
+        except urllib.error.HTTPError as e:
+            err_body = ""
+            try:
+                err_body = e.read().decode("utf-8", errors="replace")[:600]
+            except Exception:
+                err_body = str(e.reason)
+
+            # If system_instruction was unsupported by the model, retry by embedding it in the first user turn
+            if e.code == 400 and ("system_instruction" in err_body.lower() or "systeminstruction" in err_body.lower()):
+                try:
+                    fallback_contents = [dict(c) for c in gemini_contents]
+                    first_text = fallback_contents[0]["parts"][0]["text"]
+                    fallback_contents[0] = {
+                        "role": "user",
+                        "parts": [{"text": f"[SYSTEM INSTRUCTION & CONTEXT:\n{full_system_text}]\n\n{first_text}"}]
+                    }
+                    retry_payload = {
+                        "contents": fallback_contents,
+                        "generationConfig": {"temperature": 0.4, "maxOutputTokens": 800}
+                    }
+                    retry_req = urllib.request.Request(endpoint, data=json.dumps(retry_payload).encode("utf-8"), headers=headers, method="POST")
+                    with urllib.request.urlopen(retry_req, timeout=14) as retry_res:
+                        res_data = json.loads(retry_res.read().decode("utf-8"))
+                        candidates = res_data.get("candidates", [])
+                        if candidates:
+                            parts = candidates[0].get("content", {}).get("parts", [])
+                            if parts:
+                                return parts[0].get("text", "").strip()
+                except Exception as retry_e:
+                    safe_retry = self._sanitize_log(str(retry_e))
+                    sys.stderr.write(f"[AgriDirect AI Gemini Error] Fallback retry failed: {safe_retry}\n")
+
+            safe_err = self._sanitize_log(f"HTTP {e.code}: {err_body}")
+            sys.stderr.write(f"[AgriDirect AI Gemini Error] {safe_err}\n")
+            return ""
+        except urllib.error.URLError as e:
+            safe_err = self._sanitize_log(f"URLError: {e.reason}")
+            sys.stderr.write(f"[AgriDirect AI Gemini Error] {safe_err}\n")
+            return ""
+        except Exception as e:
+            safe_err = self._sanitize_log(f"Unexpected: {str(e)}")
+            sys.stderr.write(f"[AgriDirect AI Gemini Error] {safe_err}\n")
             return ""
 
 
@@ -201,6 +306,29 @@ class GroundedEngineProvider(BaseAIProvider):
     Executes domain parsing, price transparent calculations, order lookups,
     and localized responses across all 23 languages without hallucinations.
     """
+
+    # Comprehensive multilingual mapping for all 12 catalog products
+    CROP_KEYWORD_MAP = {
+        0: ["tomato", "tomatoes", "టమాట", "టమాటా", "నాటు టమాట", "टमाटर", "টমেটো", "தக்காளி", "ಟೊಮೆಟೊ", "തക്കാളി", "ٹماٹر", "बिलाहि", "ᱵᱤᱞᱟᱹᱛᱤ"],
+        1: ["onion", "onions", "ఉల్లి", "ఉల్లిపాయ", "ఎర్ర ఉల్లి", "प्याज", "पेঁয়াজ", "வெங்காயம்", "ಈರುಳ್ಳಿ", "സവാള", "پیاز", "पियाज", "ᱯᱮᱭᱟᱸᱡᱽ"],
+        2: ["apple", "apples", "ఆపిల్", "సేబు", "హిమాచల్ ఆపిల్", "सेब", "আপেল", "ஆப்பிள்", "ಸೇಬು", "ആപ്പിൾ", "سیب", "आपेल", "ᱥᱮᱣ"],
+        3: ["rice", "sona masoori", "paddy", "బియ్యం", "వరి", "సోనా మసూరి", "వడ్లు", "चावल", "धान", "ধান", "চাল", "அரிசி", "ಅಕ್ಕಿ", "അരി", "چاول", "ᱫᱟᱠᱟ"],
+        4: ["toor dal", "toordal", "arhar", "pigeon pea", "కందిపప్పు", "కంది", "अरहर", "तूर दाल", "অড়হর", "துவரம் பருப்பு", "ತೊಗರಿ ಬೇಳೆ", "തുവര పరిപ്പ്", "دال تور"],
+        5: ["chilli", "chillies", "chili", "mirchi", "మిర్చి", "ఎండుమిర్చి", "గుంటూరు మిర్చి", "मिर्च", "लङ्का", "লঙ্কা", "மிளகாய்", "ಮೆಣಸಿನಕಾಯಿ", "മുളക്", "لال مرچ"],
+        6: ["ghee", "cow ghee", "desi ghee", "నెయ్యి", "ఆవు నెయ్యి", "దేశీ నెయ్యి", "घी", "देसी घी", "ঘি", "நெய்", "ತುಪ್ಪ", "നെയ്യ്", "گھی", "ᱜᱷᱤᱣ"],
+        7: ["spinach", "palak", "green palak", "పాలకూర", "ఆకుకూర", "पालक", "পালং শাক", "பசலைக் கீரை", "கீரை", "ಪಾಲಕ್", "ചീര", "پالک"],
+        8: ["papaya", "బొప్పాయి", "బొప్పాయి పండు", "పండ్ల", "पपीता", "पेঁপে", "பப்பாளி", "பரங்கி", "ಪರಂಗಿ ಹಣ್ಣು", "പപ്പായ", "پپیتا", "ᱯᱟᱯᱤᱭᱟ"],
+        9: ["turmeric", "raw turmeric", "haldi", "పసుపు", "పసుపు కొమ్ములు", "हल्दी", "হলুদ", "மஞ்சள்", "அரிசினம்", "ಅರಿಶಿನ", "മഞ്ഞൾ", "ہلدی", "ᱥᱟᱥᱟᱝ"],
+        10: ["wheat", "wheat grain", "sharbati", "గోధుమలు", "గోధుమ", "गेहूँ", "गेहूं", "গম", "கோதுமை", "ಗೋಧಿ", "ഗോതമ്പ്", "گندم", "ᱜᱩᱦᱩᱢ"],
+        11: ["moong dal", "moong", "green gram", "పెసరపప్పు", "పెసలు", "పప్పు", "मूंग दाल", "मूंग", "মুগ ডাল", "பாசிப் பருப்பு", "ಹೆಸರು ಬೇಳೆ", "ചെറുപയർ", "مونگ دال"]
+    }
+
+    GREETING_WORDS = [
+        "hi", "hello", "hey", "namaste", "namaskar", "vanakkam", "pranam", "pranaam",
+        "adaab", "salam", "sat sri akal", "khulumby", "khurumjari", "johar",
+        "who are you", "what can you do", "help", "start",
+        "నమస్తే", "నమస్కారం", "హలో", "బాగున్నారా", "नमस्ते", "नमस्कार", "प्रणाम", "سلام", "வணக்கம்"
+    ]
 
     def generate_response(self, user_query: str, language_code: str, page_context: str = "", user_context: dict = None, history: list = None) -> str:
         q_lower = user_query.lower().strip()
@@ -215,67 +343,62 @@ class GroundedEngineProvider(BaseAIProvider):
         if any(w in q_lower for w in sensitive_probe_words):
             return self._format_privacy_refusal(lang)
 
-        # 1. Price comparison / tomato price query
-        if any(w in q_lower for w in ["tomato", "tomatoes", "టమాట", "टमाटर", "টমেটো", "தக்காளி", "ಟೊಮೆಟೊ", "തക്കാളി", "ٹماٹر", "बिलाहि", "ᱵᱤᱞᱟᱹᱛᱤ"]):
-            p = CATALOG_DATA[0] # Tomatoes
-            diff = p['marketPrice'] - p['farmerPrice']
-            pct = round((diff / p['marketPrice']) * 100)
-            return self._format_product_price(p, diff, pct, lang)
+        def _matches(kw: str, text: str) -> bool:
+            if re.match(r'^[a-zA-Z0-9\s]+$', kw):
+                return bool(re.search(r'\b' + re.escape(kw) + r'\b', text))
+            return kw in text
 
-        # 2. Onion price query
-        if any(w in q_lower for w in ["onion", "onions", "ఉల్లి", "प्याज", "পেঁয়াজ", "வெங்காயம்", "ಈರುಳ್ಳಿ", "സവാള", "پیاز", "पियाज", "ᱯᱮᱭᱟᱸᱡᱽ"]):
-            p = CATALOG_DATA[1] # Onions
-            diff = p['marketPrice'] - p['farmerPrice']
-            pct = round((diff / p['marketPrice']) * 100)
-            return self._format_product_price(p, diff, pct, lang)
+        # 1. Check all 12 Catalog Products
+        for prod_idx, keywords in self.CROP_KEYWORD_MAP.items():
+            if any(_matches(w, q_lower) for w in keywords):
+                p = CATALOG_DATA[prod_idx]
+                diff = p['marketPrice'] - p['farmerPrice']
+                pct = round((diff / p['marketPrice']) * 100)
+                return self._format_product_price(p, diff, pct, lang)
 
-        # 3. Apple price query
-        if any(w in q_lower for w in ["apple", "apples", "ఆపిల్", "सेब", "আপেল", "ஆப்பிள்", "ಸೇಬು", "ആപ്പിൾ", "سیب", "आपेल", "ᱥᱮᱣ"]):
-            p = CATALOG_DATA[2] # Apples
-            diff = p['marketPrice'] - p['farmerPrice']
-            pct = round((diff / p['marketPrice']) * 100)
-            return self._format_product_price(p, diff, pct, lang)
+        # 2. General Catalog / All Products Inquiry
+        if any(w in q_lower for w in ["all products", "all crops", "product list", "available crops", "what products", "list items", "సరుకులు", "అన్ని ఉత్పత్తులు", "ఉత్పత్తుల జాబితా", "सभी फसलें", "उत्पाद सूची", "பொருட்கள்"]):
+            return self._format_all_products_overview(lang)
 
-        # 4. Ghee / Milk / Dairy
-        if any(w in q_lower for w in ["ghee", "milk", "dairy", "నెయ్యి", "घी", "ঘি", "நெய்", "ತುಪ್ಪ", "നെയ്യ്", "گھی", "गियाओ", "ᱜᱷᱤᱣ"]):
-            p = CATALOG_DATA[6] # Ghee
-            diff = p['marketPrice'] - p['farmerPrice']
-            pct = round((diff / p['marketPrice']) * 100)
-            return self._format_product_price(p, diff, pct, lang)
-
-        # 5. Price comparison feature explanation
-        if any(w in q_lower for w in ["price comparison", "compare price", "middleman", "savings", "ధర పోలిక", "దళారులు", "दाम", "मूल्य", "बचत", "দালাল", "சேமிப்பு", "ಬೆಲೆ", "بچت", "দাম"]):
+        # 3. Price comparison / Middleman savings
+        if any(w in q_lower for w in ["price comparison", "compare price", "middleman", "savings", "ధర పోలిక", "దళారులు", "పొదుపు", "दाम", "मूल्य", "बचत", "बिचौलिया", "দালাল", "சேமிப்பு", "பொருளாதார சேமிப்பு", "ಬೆಲೆ", "بچت"]):
             return self._format_price_compare_explainer(lang)
 
-        # 6. How to sell harvest / Add crop (Farmer)
-        if any(w in q_lower for w in ["sell", "list", "add crop", "add harvest", "అమ్మకం", "పంట చేర్చండి", "बेचना", "फसल जोड़ें", "বিক্রি", "விற்க", "ಮಾರಾಟ", "فروخت", "फान", "ᱟᱹᱠᱷᱨᱤᱧ"]):
+        # 4. How to sell harvest / Add crop (Farmer)
+        if any(w in q_lower for w in ["sell", "list crop", "add crop", "add harvest", "list product", "farmer dashboard", "అమ్మకం", "పంట చేర్చండి", "పంట అమ్మడం", "बेचना", "फसल जोड़ें", "फसल बेचें", "বিক্রি", "விற்க", "ಮಾರಾಟ", "فروخت", "फान", "ᱟᱹᱠᱷᱨᱤᱧ"]):
             return self._format_sell_guide(lang)
 
-        # 7. Check orders / Track delivery
-        if any(w in q_lower for w in ["order", "orders", "delivery", "track", "ఆర్డర్", "డెలివరీ", "ऑर्डर", "वितरण", "ডেলিভারি", "ஆர்டர்", "ಟ್ರ್ಯಾಕ್", "آرڈر", "सौহোনায়", "ᱚᱨᱰᱟᱨ"]):
+        # 5. Check orders / Track delivery
+        if any(w in q_lower for w in ["order", "orders", "delivery", "track", "dispatch", "ఆర్డర్", "డెలివరీ", "ట్రాక్", "ऑर्डर", "वितरण", "डिलिवरी", "ডেলিভারি", "ஆர்டர்", "ಟ್ರ್ಯಾಕ್", "آرڈر", "सौহোনায়", "ᱚᱨᱰᱟᱨ"]):
             user_name = user_context.get("name") if user_context else None
             user_role = user_context.get("role") if user_context else None
             return self._format_order_info(user_name, user_role, lang)
 
-        # 8. Vegetables under ₹50 / Fresh products list
-        if any(w in q_lower for w in ["under 50", "under 50/kg", "50", "cheap", "vegetable", "vegetables", "fresh product", "శాకాహారం", "కూరగాయలు", "सब्जी", "শাকসবজি", "காய்கறி", "ತರಕಾರಿ", "سبزی"]):
+        # 6. Vegetables under ₹50 / Budget products
+        if any(w in q_lower for w in ["under 50", "under 50/kg", "50", "cheap", "affordable", "vegetable", "vegetables", "fresh product", "శాకాహారం", "కూరగాయలు", "సబ్జీ", "सब्जी", "सस्ती सब्जियां", "শাকসবজি", "காய்கறி", "ತರಕಾರಿ", "سبزی"]):
             cheap_prods = [p for p in CATALOG_DATA if p['farmerPrice'] <= 50 and p['category'] == 'vegetables']
             return self._format_cheap_vegetables(cheap_prods, lang)
 
-        # 9. Crop yield / Soil health / Farming advice
-        if any(w in q_lower for w in ["yield", "improve", "fertilizer", "pest", "soil", "దిగుబడి", "ఎరువు", "పురుగు", "उपज", "खाद", "কীটপতঙ্গ", "உரம்", "ಇಳುವರಿ", "پیداوار", "खाथ", "ᱟᱨᱡᱟᱣ"]):
+        # 7. Crop yield / Soil health / Natural farming advice
+        if any(w in q_lower for w in ["yield", "improve", "fertilizer", "pest", "soil", "organic", "neem", "దిగుబడి", "ఎరువు", "పురుగు", "పురుగుల నివారణ", "సేంద్రీయ", "ఉత్పాదకత", "उपज", "खाद", "কীটপতঙ্গ", "உரம்", "இளुవరి", "پیداوار", "खाथ", "ᱟᱨᱡᱟᱣ"]):
             return self._format_agri_safety_advice(lang)
 
-        # 10. Seasonal crops
+        # 8. Seasonal crops
         if any(w in q_lower for w in ["season", "suitable", "kharif", "rabi", "వాతావరణం", "సీజన్", "मौसम", "ऋतु", "মৌসুম", "பருவம்", "ಋತು", "موسم"]):
             return self._format_seasonal_guide(lang)
 
-        # 11. Generic / Welcome fallback
-        return self._format_generic_response(user_query, page_context, lang)
+        # 9. Pure Greeting (Welcome message)
+        if any(q_lower == w or q_lower.startswith(w + " ") or q_lower.endswith(" " + w) for w in self.GREETING_WORDS):
+            return self._format_generic_response(user_query, page_context, lang)
+
+        # 10. Unrecognized / Out-of-Domain Query:
+        # Informative notice explaining grounded offline mode and listing supported topics (NEVER repeat generic greeting)
+        return self._format_offline_unsupported_response(user_query, lang)
 
     # --- Localized Response Formatters ---
 
     def _format_product_price(self, p, diff, pct, lang: str) -> str:
+        organic_tag = "100% Certified Organic (సేంద్రీయ పద్ధతి)" if p['isOrganic'] else "Standard Farm Grade"
         if lang == "te":
             return (
                 f"🌱 **{p['name']} ధర వివరాలు:**\n"
@@ -283,7 +406,8 @@ class GroundedEngineProvider(BaseAIProvider):
                 f"• బహిరంగ మార్కెట్/మండి ధర: ₹{p['marketPrice']}/{p['unit']}\n"
                 f"• మీకు ఆదా: **₹{diff}/{p['unit']} ({pct}% ఆదా!)**\n"
                 f"• రైతు: **{p['farmer']}** ({p['location']})\n"
-                f"• అందుబాటులో ఉన్న నిల్వ: {p['stock']} {p['unit']} (సేంద్రీయ పద్ధతి)\n\n"
+                f"• అందుబాటులో ఉన్న నిల్వ: {p['stock']} {p['unit']} ({organic_tag})\n"
+                f"• నిల్వ కాలం (Shelf Life): {p['shelfLife']}\n\n"
                 f"మీరు నేరుగా కొనుగోలు చేయడం ద్వారా 100% మొత్తం రైతు ఖాతాకే చేరుతుంది!"
             )
         elif lang == "hi":
@@ -293,7 +417,7 @@ class GroundedEngineProvider(BaseAIProvider):
                 f"• मंडी/बाज़ार का दाम: ₹{p['marketPrice']}/{p['unit']}\n"
                 f"• आपकी कुल बचत: **₹{diff}/{p['unit']} ({pct}% बचत!)**\n"
                 f"• किसान: **{p['farmer']}** ({p['location']})\n"
-                f"• उपलब्ध स्टॉक: {p['stock']} {p['unit']} (प्राकृतिक खेती)\n\n"
+                f"• उपलब्ध स्टॉक: {p['stock']} {p['unit']} ({p['shelfLife']})\n\n"
                 f"AgriDirect पर खरीदने से पूरा पैसा सीधे किसान को मिलता है, बिचौलियों को नहीं।"
             )
         elif lang == "ta":
@@ -303,7 +427,7 @@ class GroundedEngineProvider(BaseAIProvider):
                 f"• சந்தை சில்லறை விலை: ₹{p['marketPrice']}/{p['unit']}\n"
                 f"• உங்கள் சேமிப்பு: **₹{diff}/{p['unit']} ({pct}% சேமிப்பு!)**\n"
                 f"• விவசாயி: **{p['farmer']}** ({p['location']})\n"
-                f"• இருப்பு: {p['stock']} {p['unit']}"
+                f"• இருப்பு: {p['stock']} {p['unit']} ({p['shelfLife']})"
             )
         elif lang == "ur":
             return (
@@ -322,9 +446,20 @@ class GroundedEngineProvider(BaseAIProvider):
                 f"• Mandi / Retail Price: ₹{p['marketPrice']}/{p['unit']}\n"
                 f"• Direct Consumer Savings: **₹{diff}/{p['unit']} ({pct}% savings!)**\n"
                 f"• Verified Farmer: **{p['farmer']}** ({p['location']})\n"
-                f"• Available Stock: {p['stock']} {p['unit']} (100% Certified Organic)\n\n"
+                f"• Available Stock: {p['stock']} {p['unit']} ({organic_tag})\n"
+                f"• Shelf Life: {p['shelfLife']}\n\n"
                 f"Zero middlemen take a cut — 100% of your payment goes directly to the grower."
             )
+
+    def _format_all_products_overview(self, lang: str) -> str:
+        rows = [f"• **{p['name']}**: ₹{p['farmerPrice']}/{p['unit']} (Mandi ₹{p['marketPrice']}) — {p['farmer']}" for p in CATALOG_DATA]
+        prods_text = "\n".join(rows)
+        if lang == "te":
+            return f"🛒 **అగ్రిడైరెక్ట్ లో అందుబాటులో ఉన్న 12 తాజా ఉత్పత్తులు:**\n\n{prods_text}\n\nఏదైనా నిర్దిష్ట పంటపై వివరాల కోసం పంట పేరును అడగండి!"
+        elif lang == "hi":
+            return f"🛒 **AgriDirect पर उपलब्ध सभी 12 ताज़ा उत्पाद:**\n\n{prods_text}\n\nकिसी भी फसल की विस्तृत जानकारी के लिए उसका नाम लिखकर पूछें!"
+        else:
+            return f"🛒 **All 12 Verified Farm Products on AgriDirect:**\n\n{prods_text}\n\nAsk about any specific product above to view verified farm origin, stock, and savings!"
 
     def _format_price_compare_explainer(self, lang: str) -> str:
         if lang == "te":
@@ -471,19 +606,19 @@ class GroundedEngineProvider(BaseAIProvider):
         if lang == "te":
             return (
                 f"నమస్తే! 🌱 నేను అగ్రిడైరెక్ట్ AI సహాయకుడిని.\n"
-                f"మీరు టమోటాలు, ఉల్లిపాయలు లేదా ఇతర పంటల ధరలు తెలుసుకోవాలనుకుంటున్నారా? "
-                f"లేదా రైతుగా మీ పంటను ఎలా అమ్మాలో తెలుసుకోవాలా? నాకు అడగండి, నేను మీకు ఖచ్చితమైన సమాచారంతో సహాయం చేస్తాను!"
+                f"నేను వ్యవసాయం, పంటల ధరలు, తాజా ఉత్పత్తులు, ఆర్డర్లు మరియు పంట అమ్మకాలలో మీకు సహాయపడగలను.\n"
+                f"టమాటాలు, ఉల్లిపాయలు, బియ్యం, లేదా నెయ్యి వంటి ఉత్పత్తుల ధరల గురించి అడగండి!"
             )
         elif lang == "hi":
             return (
                 f"नमस्ते! 🌱 मैं AgriDirect AI हूँ।\n"
-                f"आप टमाटर, प्याज या अन्य फसलों के ताज़ा दाम, मंडी से तुलना, या अपनी फसल बेचने के बारे में पूछ सकते हैं। "
-                f"मैं आपकी क्या मदद करूँ?"
+                f"मैं खेती, फसल के दाम, ताज़ा उत्पाद, ऑर्डर और फसल बेचने में आपकी मदद कर सकता हूँ।\n"
+                f"आप टमाटर, प्याज, सेब, चावल या अन्य फसलों के भाव पूछ सकते हैं!"
             )
         elif lang == "ur":
             return (
                 f"السلام علیکم! 🌱 میں AgriDirect AI ہوں۔\n"
-                f"آپ تازہ فصلوں کی قیمتوں، کسانوں کے منافع، اور آرڈرز کے بارے میں معلومات حاصل کر سکتے ہیں۔ بتائیں میں آپ کی کیا مدد کر سکتا ہوں؟"
+                f"آپ تازہ فصلوں کی قیمتوں، کسانوں کے منافع، اور آرڈرز کے بارے میں معلومات حاصل کر سکتے ہیں۔"
             )
         elif lang == "ta":
             return (
@@ -498,6 +633,75 @@ class GroundedEngineProvider(BaseAIProvider):
                 f"What would you like to explore today?"
             )
 
+    def _format_offline_unsupported_response(self, query: str, lang: str) -> str:
+        """
+        Honest, informative response when running in grounded offline mode (or Gemini unconfigured/errored)
+        and the user asks an out-of-domain or unrecognized question.
+        Never repeats the generic greeting loop.
+        """
+        if lang == "te":
+            return (
+                "🌾 **అగ్రిడైరెక్ట్ ఆఫ్‌లైన్ మార్కెట్‌ప్లేస్ మోడ్ నోటీసు:**\n"
+                "ప్రస్తుతం నేను లైవ్ AI సర్వర్ లేకుండా ధృవీకరించబడిన ఆఫ్‌లైన్ మార్కెట్‌ప్లేస్ మోడ్‌లో పనిచేస్తున్నాను. "
+                "కాబట్టి వ్యవసాయేతర లేదా సాధారణ ప్రశ్నలకు సమాధానం ఇవ్వలేను.\n\n"
+                "కానీ నేను ఈ క్రింది మార్కెట్‌ప్లేస్ అంశాలలో మీకు ఖచ్చితంగా సహాయం చేయగలను:\n"
+                "• **పంటల ధరలు & పొదుపు**: టమాటాలు, ఉల్లిపాయలు, ఆపిల్స్, సోనా మసూరి బియ్యం, కందిపప్పు, గుంటూరు మిర్చి, ఆవు నెయ్యి, పాలకూర, బొప్పాయి, పసుపు, గోధుమలు, పెసరపప్పు.\n"
+                "• **ధరల పోలిక**: దళారులు లేకుండా రైతుకు 40% అదనపు ఆదాయం, వినియోగదారుడికి 30% ఆదా ఎలా లభిస్తుంది.\n"
+                "• **పంట అమ్మకం**: ఫార్మర్ డాష్‌బోర్డ్‌లో పంటను ఎలా చేర్చాలి.\n"
+                "• **ఆర్డర్లు & డెలివరీ**: ఆర్డర్ల స్థితిని ఎలా ట్రాక్ చేయాలి.\n"
+                "• **బడ్జెట్ కూరగాయలు**: రూ. 50/కేజీ లోపు తాజా కూరగాయల జాబితా.\n"
+                "• **సహజ సేద్యం**: వేపనూనె, జీవామృతం మరియు నేల సారాన్ని పెంచే చిట్కాలు.\n\n"
+                "దయచేసి పై అంశాలలో ఒకదానిని అడగండి లేదా పైన ఉన్న క్విక్ బటన్లను క్లిక్ చేయండి!"
+            )
+        elif lang == "hi":
+            return (
+                "🌾 **AgriDirect ऑफलाइन सहायता सूचना:**\n"
+                "वर्तमान में मैं बिना लाइव AI कनेक्शन के प्रमाणित AgriDirect बाज़ार मोड में काम कर रहा हूँ। "
+                "अतः मैं गैर-कृषि या सामान्य प्रश्नों का उत्तर देने में असमर्थ हूँ।\n\n"
+                "परंतु मैं इन महत्वपूर्ण विषयों में तुरंत आपकी सहायता कर सकता हूँ:\n"
+                "• **फसलों के दाम और बचत**: टमाटर, प्याज, सेब, चावल, अरहर दाल, मिर्च, गाय का घी, पालक, पपीता, हल्दी, गेहूँ या मूँग दाल के ताज़ा भाव।\n"
+                "• **मूल्य तुलना**: बिचौलियों के मुकाबले किसान को 40% अधिक आय और उपभोक्ता को 30% बचत।\n"
+                "• **फसल बिक्री**: किसान डैशबोर्ड पर फसल जोड़ने और बेचने की विधि।\n"
+                "• **ऑर्डर ट्रैकिंग**: अपने ताज़ा ऑर्डर की स्थिति जानने का तरीका।\n"
+                "• **सस्ती सब्जियां**: ₹50/किलो से कम कीमत वाले ताज़ा उत्पाद।\n"
+                "• **जैविक खेती सलाह**: नीम तेल, जीवामृत और मिट्टी सुधार के उपाय।\n\n"
+                "कृपया इनमें से किसी विषय पर पूछें या ऊपर दिए गए क्विक एक्शन बटन दबाएं!"
+            )
+        elif lang == "ta":
+            return (
+                "🌾 **AgriDirect ஆஃப்லைன் வழிகாட்டி அறிவிப்பு:**\n"
+                "தற்போது நான் நேரடி பொது AI இணைப்பு இல்லாமல், AgriDirect சந்தை வழிகாட்டி முறையில் இயங்குகிறேன்.\n\n"
+                "நான் உங்களுக்கு உடனடியாக உதவக்கூடிய தலைப்புகள்:\n"
+                "• **பயிர் விலைகள்**: தக்காளி, வெங்காயம், ஆப்பிள், அரிசி, துவரம் பருப்பு, மிளகாய், நெய், கீரை, பப்பாளி, மஞ்சள், கோதுமை, பாசிப்பருப்பு.\n"
+                "• **விலை ஒப்பீடு**: இடைத்தரகர்கள் இன்றி 40% கூடுதல் வருமானம் மற்றும் 30% சேமிப்பு.\n"
+                "• **விளைபொருள் விற்பனை**: உழவர் டாஷ்போர்டில் பயிர்களை பட்டியலிடும் முறை.\n"
+                "• **ஆர்டர் விவரங்கள்**: உங்கள் ஆர்டர்களை கண்காணிக்கும் வழிமுறைகள்.\n"
+                "• **இயற்கை விவசாயம்**: வேப்பெண்ணெய் கரைசல், ஜீவாமிர்தம் மற்றும் மண் வளம்."
+            )
+        elif lang == "ur":
+            return (
+                "🌾 **AgriDirect آف لائن گراؤنڈڈ موڈ نوٹس:**\n"
+                "فی الوقت میں تصدیق شدہ زرعی مارکیٹ کے آف لائن موڈ میں کام کر رہا ہوں، اس لیے غیر زرعی سوالات کے جوابات فراہم نہیں کر سکتا۔\n\n"
+                "تاہم آپ مجھ سے درج ذیل امور پر فوری رہنمائی حاصل کر سکتے ہیں:\n"
+                "• **فصلوں کی قیمتیں**: ٹماٹر، پیاز، سیب، چاول، دال تور، مرچ، دیسی گھی، پالک، پپیتا، ہلدی، گندم یا مونگ دال۔\n"
+                "• **قیمتوں کا موازنہ**: دلالوں کے بغیر کسانوں اور صارفین کے فائدے کی تفصیل۔\n"
+                "• **پیداوار کی فروخت**: کسان ڈیش بورڈ پر فصل لسٹ کرنے کا طریقہ۔\n"
+                "• **آرڈرز کی ٹریکنگ**: اپنے فعال آرڈرز کا جائزہ لیں۔"
+            )
+        else:
+            return (
+                "🌾 **AgriDirect Grounded Mode Notice:**\n"
+                "I am currently operating in verified offline marketplace mode without an active external LLM connection, "
+                "so I cannot answer open-ended or non-agricultural questions.\n\n"
+                "However, I can immediately assist you with verified AgriDirect marketplace information:\n"
+                "• **Real Crop Prices & Savings**: Ask about Tomatoes, Onions, Apples, Rice, Toor Dal, Chilli, Desi Ghee, Palak Spinach, Papaya, Turmeric, Wheat, or Moong Dal.\n"
+                "• **Price Comparison**: How AgriDirect bypasses 4-6 intermediaries to deliver 40% more to farmers and 30% savings to consumers.\n"
+                "• **Selling Your Harvest**: Step-by-step guidance for farmers on listing crops on the Farmer Dashboard.\n"
+                "• **My Orders & Tracking**: How to inspect active farm orders and contact growers.\n"
+                "• **Budget Produce**: Fresh organic vegetables under ₹50/kg.\n"
+                "• **Safe Farming Advice**: Organic pest management (Neem oil), Jeevamrutha, and soil health guidance.\n\n"
+                "Please choose one of the topics above or select a Quick Action chip!"
+            )
 
     def _format_privacy_refusal(self, lang: str) -> str:
         if lang == "te":
@@ -521,14 +725,19 @@ class AIProviderManager:
     def is_ai_configured(self) -> bool:
         return bool(self._get_api_key())
 
+    def get_model_name(self) -> str:
+        return os.environ.get("GEMINI_MODEL", DEFAULT_GEMINI_MODEL)
+
     def get_provider_name(self) -> str:
-        return "Gemini 1.5/2.0 API (Configured)" if self.is_ai_configured() else "AgriDirect Grounded Agricultural Engine"
+        if self.is_ai_configured():
+            return f"Google Gemini ({self.get_model_name()}) [Configured]"
+        return "AgriDirect Grounded Agricultural Engine"
 
     def generate(self, user_query: str, language_code: str = "en", page_context: str = "", user_context: dict = None, history: list = None) -> str:
         api_key = self._get_api_key()
         if api_key:
             try:
-                provider = GeminiProvider(api_key=api_key)
+                provider = GeminiProvider(api_key=api_key, model_name=self.get_model_name())
                 response = provider.generate_response(
                     user_query=user_query,
                     language_code=language_code,
@@ -538,9 +747,12 @@ class AIProviderManager:
                 )
                 if response:
                     return response
-            except Exception:
-                pass
-        
+            except Exception as e:
+                clean_err = re.sub(r'([?&]key=|[xX]-[gG]oog-[aA]pi-[kK]ey[:=\s]+)[a-zA-Z0-9_\-]+', r'\1[REDACTED]', str(e))
+                if api_key:
+                    clean_err = clean_err.replace(api_key, "[REDACTED_API_KEY]")
+                sys.stderr.write(f"[AgriDirect AI Manager Error] Gemini invocation failed: {clean_err}\n")
+
         return self.grounded_engine.generate_response(
             user_query=user_query,
             language_code=language_code,
