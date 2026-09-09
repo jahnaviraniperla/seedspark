@@ -172,3 +172,31 @@
     margin: 1rem;
   }
 }
+
+/* Mobile Language Selector Optimization */
+@media (max-width: 480px) {
+  .lang-select {
+    padding: 0.35rem 0.55rem;
+    font-size: 0.8rem;
+    max-width: 135px;
+  }
+
+  /* Mobile AI Assistant Adjustments */
+  .agri-ai-floating-btn {
+    bottom: 18px;
+    right: 18px;
+    width: 52px;
+    height: 52px;
+  }
+
+  .agri-ai-panel {
+    bottom: 80px;
+    right: 10px;
+    left: 10px;
+    width: auto;
+    height: calc(100vh - 100px);
+    max-width: none;
+    border-radius: var(--radius-lg);
+  }
+}
+

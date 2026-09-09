@@ -210,10 +210,10 @@ const AgriFarmer = {
     const location = document.getElementById('modalLocation').value.trim() || user.location || "Guntur, Andhra Pradesh";
     const imageUrl = document.getElementById('modalImageUrl').value.trim() || "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=600&q=80";
     const isOrganic = document.getElementById('modalIsOrganic').checked;
-    const desc = document.getElementById('modalDesc').value.trim() || "Naturally harvested fresh farm produce.";
+    const desc = document.getElementById('modalDesc').value.trim() || "Naturally harvested fresh farm products.";
 
     if (!name || !farmerPrice || !marketPrice || !stock) {
-      AgriApp.showToast("Please fill in all mandatory products fields.", "error");
+      AgriApp.showToast("Please fill in all mandatory product fields.", "error");
       return;
     }
 
